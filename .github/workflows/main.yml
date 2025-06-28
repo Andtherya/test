@@ -11,7 +11,7 @@ jobs:
 
     steps:
       - name: SSH with secret
-        run: ssh -o StrictHostKeyChecking=no "$TMATE_SSH" "echo Connected"
+        run: ssh -o StrictHostKeyChecking=no -p 22 $TMATE_SSH "echo Connected"
         env:
           TMATE_SSH: ${{ secrets.TMATE_SSH }}
 
