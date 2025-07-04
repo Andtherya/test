@@ -11,33 +11,11 @@ const webpwd = process.env.webpwd || '';
 const webpsu = process.env.webpsu || 'sub';
 const webpox = process.env.webpox || 'time.is';
 const webname = process.env.webname || 'hgf';
+const reryx = 'ryx';
+const recox = 'cox';
+const rewals = 'wals';
 
-function generateRandomName(prefix) {
-  const randomString = crypto.randomBytes(4).toString('hex');
-  return `${prefix}_${randomString}`;
-}
-
-function renameFile(originalName) {
-  try {
-    if (fs.existsSync(originalName)) {
-      const newName = generateRandomName(originalName);
-      fs.renameSync(originalName, newName);
-      console.log(`Renamed ${originalName} to ${newName}`);
-      return newName;
-    }
-    return originalName;
-  } catch (error) {
-    console.error(`Error renaming ${originalName}:`, error);
-    return originalName;
-  }
-}
-
-const reryx = renameFile('ryx');
-const recox = renameFile('cox');
-
-app.get("/", function(req, res) {
-  res.send("Hello world!");
-});
+app.use(express.static('publlic'));
 
 const metaInfo = execSync(
   'curl -s https://speed.cloudflare.com/meta | awk -F\\" \'{print $26"-"$18}\' | sed -e \'s/ /_/g\'',
@@ -66,7 +44,6 @@ function runWeb() {
       console.error(`${reryx} running error: ${error}`);
     } else {
       console.log(`${reryx} is running`);
-
       setTimeout(() => {
         runServer();
       }, 2000);
@@ -81,6 +58,20 @@ function runServer() {
       console.error(`${recox} running error: ${error}`);
     } else {
       console.log(`${recox} is running`);
+      setTimeout(() => {
+        runWA();
+      }, 2000);
+    }
+  });
+}
+
+function runWA() {
+  const command3 = `nohup ./${rewals} >/dev/null 2>&1 &`;
+  exec(command3, (error) => {
+    if (error) {
+      console.error(`${rewals} running error: ${error}`);
+    } else {
+      console.log(`${rewals} is running`);
     }
   });
 }
