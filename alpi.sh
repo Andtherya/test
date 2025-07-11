@@ -1,61 +1,55 @@
 #!/bin/sh
+
 set -e
 
-# ========= 配置项 =========
-USERNAME=alpineuser  # 新建用户名称
-AUTOLOGIN_TTY=tty1   # autologin 用的终端
-BROWSER_EXEC="chromium --no-sandbox --enable-features=VaapiVideoDecoder --use-gl=desktop"
+USER=alpineuser
+# 使用清华镜像
+MIRROR_URL="https://mirrors.tuna.tsinghua.edu.cn/alpine/latest-stable/main"
 
-echo "[1/6] 创建新用户：$USERNAME"
+# 设置 apk 镜像源
+echo "$MIRROR_URL" > /etc/apk/repositories
+echo "${MIRROR_URL/alpine/alpine/latest-stable/community}" >> /etc/apk/repositories
 
-# 添加用户组和用户（免密码）
-adduser -D -G users -s /bin/sh $USERNAME
-echo "$USERNAME ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+apk update
 
-# ========= 设置 LightDM 自动登录该用户 =========
-echo "[2/6] 配置 LightDM 自动登录"
+# 添加用户并设置免密码 sudo
+adduser -D "$USER"
+addgroup "$USER" wheel
+echo "$USER ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 
-mkdir -p /etc/lightdm
-cat > /etc/lightdm/lightdm.conf <<EOF
-[Seat:*]
-autologin-user=$USERNAME
-autologin-session=openbox
-EOF
+# 设置自动登录该用户
+sed -i "s|^tty1.*|tty1::respawn:/bin/login -f $USER tty1 </dev/tty1 >/dev/tty1 2>&1|" /etc/inittab
 
-# ========= 配置 openbox 自动启动 chromium =========
-echo "[3/6] 配置 Openbox 自动启动 Chromium 浏览器"
+# 安装图形界面和浏览器
+apk add xorg-server xf86-video-vesa xf86-input-libinput \
+        openbox chromium dbus elogind polkit \
+        xf86-video-intel mesa-dri-gallium mesa-egl ttf-dejavu ttf-noto
 
-USER_HOME="/home/$USERNAME"
-mkdir -p $USER_HOME/.config/openbox
+# 启用 dbus 和 elogind
+rc-update add dbus
+rc-update add elogind
+rc-service dbus start
+rc-service elogind start
 
-cat > $USER_HOME/.config/openbox/autostart <<EOF
+# 安装 fcitx5 + Rime 拼音输入法
+apk add fcitx5 fcitx5-rime fcitx5-configtool fcitx5-gtk fcitx5-qt5
+
+# 用户目录配置
+su - "$USER" -c 'mkdir -p ~/.config/openbox ~/.config/autostart'
+cat <<EOF > /home/$USER/.xinitrc
 #!/bin/sh
-$BROWSER_EXEC &
-EOF
-
-chown -R $USERNAME:users $USER_HOME/.config
-
-# ========= 安装 fcitx5 中文输入法（拼音） =========
-echo "[4/6] 安装中文输入法 fcitx5 + 拼音"
-
-apk add --no-cache \
-  fcitx5 fcitx5-chinese-addons fcitx5-configtool fcitx5-gtk \
-  fcitx5-pinyin glibc-locales
-
-# ========= 设置用户环境变量启动输入法 =========
-echo "[5/6] 配置环境变量以启用 fcitx5"
-
-cat >> $USER_HOME/.profile <<'EOF'
-
-# Fcitx5 config
 export GTK_IM_MODULE=fcitx
 export QT_IM_MODULE=fcitx
-export XMODIFIERS=@im=fcitx
-export DefaultIMModule=fcitx
+export XMODIFIERS="@im=fcitx"
 fcitx5 &
+exec openbox-session
 EOF
 
-chown $USERNAME:users $USER_HOME/.profile
+chmod +x /home/$USER/.xinitrc
+chown -R "$USER:$USER" /home/$USER/.config /home/$USER/.xinitrc
 
-# ========= 完成 =========
-echo "[6/6] 配置完成！请重启系统后自动登录桌面，浏览器会自动启动，可用中文拼音输入法。"
+# 自动进入图形界面
+echo "exec startx" > /home/$USER/.profile
+chown "$USER:$USER" /home/$USER/.profile
+
+echo "✅ [国内优化版] 配置完成，重启后将自动登录用户 $USER 并进入图形界面。"
