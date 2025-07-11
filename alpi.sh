@@ -1,74 +1,61 @@
 #!/bin/sh
 set -e
 
-# ========== 脚本配置 ==========
+# ========= 配置项 =========
+USERNAME=alpineuser  # 新建用户名称
+AUTOLOGIN_TTY=tty1   # autologin 用的终端
+BROWSER_EXEC="chromium --no-sandbox --enable-features=VaapiVideoDecoder --use-gl=desktop"
 
-DISK="/dev/sda"          # 安装磁盘，注意确认，所有数据会被清除！
-HOSTNAME="alpine-pc"     # 主机名
-TIMEZONE="Asia/Shanghai" # 时区
-ROOT_PASS="123456"       # root 密码，安装完成后可以手动改
+echo "[1/6] 创建新用户：$USERNAME"
 
-# ========== 1. 分区 ==========
+# 添加用户组和用户（免密码）
+adduser -D -G users -s /bin/sh $USERNAME
+echo "$USERNAME ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 
-echo "开始磁盘分区（清空 $DISK）..."
-sgdisk --zap-all $DISK
+# ========= 设置 LightDM 自动登录该用户 =========
+echo "[2/6] 配置 LightDM 自动登录"
 
-sgdisk -n 1:0:0 -t 1:8300 $DISK   # 新建主分区，类型 Linux filesystem
-
-# 格式化
-mkfs.ext4 ${DISK}1
-
-# 挂载
-mount ${DISK}1 /mnt
-
-# ========== 2. 安装 Alpine 基础系统 ==========
-
-setup-alpine -f <<EOF
-$HOSTNAME
-auto
-$TIMEZONE
-$ROOT_PASS
-$DISK
-y
-y
-y
+mkdir -p /etc/lightdm
+cat > /etc/lightdm/lightdm.conf <<EOF
+[Seat:*]
+autologin-user=$USERNAME
+autologin-session=openbox
 EOF
 
-# ========== 3. 修改 apk 源为阿里云（速度快） ==========
+# ========= 配置 openbox 自动启动 chromium =========
+echo "[3/6] 配置 Openbox 自动启动 Chromium 浏览器"
 
-cat > /etc/apk/repositories <<EOL
-http://mirrors.aliyun.com/alpine/v3.18/main
-http://mirrors.aliyun.com/alpine/v3.18/community
-EOL
+USER_HOME="/home/$USERNAME"
+mkdir -p $USER_HOME/.config/openbox
 
-apk update
+cat > $USER_HOME/.config/openbox/autostart <<EOF
+#!/bin/sh
+$BROWSER_EXEC &
+EOF
 
-# ========== 4. 安装图形环境和浏览器 ==========
+chown -R $USERNAME:users $USER_HOME/.config
+
+# ========= 安装 fcitx5 中文输入法（拼音） =========
+echo "[4/6] 安装中文输入法 fcitx5 + 拼音"
 
 apk add --no-cache \
-  xorg-server \
-  xf86-video-vesa \
-  mesa-dri-intel \
-  openbox \
-  lightdm \
-  lightdm-gtk-greeter \
-  chromium
+  fcitx5 fcitx5-chinese-addons fcitx5-configtool fcitx5-gtk \
+  fcitx5-pinyin glibc-locales
 
-# ========== 5. 配置 LightDM 开机自启 ==========
+# ========= 设置用户环境变量启动输入法 =========
+echo "[5/6] 配置环境变量以启用 fcitx5"
 
-rc-update add lightdm
+cat >> $USER_HOME/.profile <<'EOF'
 
-# ========== 6. 配置 Openbox 自动启动 Chromium ==========
-
-mkdir -p /root/.config/openbox
-
-cat > /root/.config/openbox/autostart <<EOF
-chromium --no-sandbox --enable-features=VaapiVideoDecoder --use-gl=desktop &
+# Fcitx5 config
+export GTK_IM_MODULE=fcitx
+export QT_IM_MODULE=fcitx
+export XMODIFIERS=@im=fcitx
+export DefaultIMModule=fcitx
+fcitx5 &
 EOF
 
-# ========== 7. 卸载临时包、清理缓存（可选） ==========
+chown $USERNAME:users $USER_HOME/.profile
 
-apk cache clean
-
-echo "安装完成！请重启系统。"
-
+# ========= 完成 =========
+echo "[6/6] 配置完成！请重启系统后自动登录桌面，浏览器会自动启动，可用中文拼音输入法。"
