@@ -13,15 +13,19 @@ NAME="${NAME:-Vls}"
 FILE_PATH="./tmp"
 BOOT_LOG="${FILE_PATH}/boot.log"
 
-WEB_PATH="$(realpath "$FILE_PATH/web")"
-BOT_PATH="$(realpath "$FILE_PATH/bot")"
+pkill -f "./tmp/web" >/dev/null 2>&1
+pkill -f "./tmp/bot" >/dev/null 2>&1
 
-pkill -f "$WEB_PATH" >/dev/null 2>&1
-pkill -f "$BOT_PATH" >/dev/null 2>&1
+# 创建或确认 tmp 目录存在
+if [ ! -d "$FILE_PATH" ]; then
+    echo "创建 tmp 目录..."
+    mkdir -p "$FILE_PATH"
+else
+    echo "tmp 目录已存在，跳过创建。"
+fi
 
-
-mkdir -p "$FILE_PATH"
-cd "$FILE_PATH" || exit 1
+# 进入 tmp 目录
+cd "$FILE_PATH" || { echo "进入 tmp 目录失败，退出。"; exit 1; }
 
 # 下载 cox => bot
 if [ -f "bot" ]; then
