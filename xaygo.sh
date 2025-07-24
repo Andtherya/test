@@ -10,36 +10,29 @@ NAME="${NAME:-Vls}"
 FILE_PATH=$(cd "$(dirname "$0")" && pwd)
 
 
-# 临时目录路径
-TMP_DIR="$FILE_PATH/tmp"
 
-# 判断是否存在，不存在则创建
-if [ ! -d "$TMP_DIR" ]; then
-  mkdir "$TMP_DIR"
-  echo "临时目录已创建在：$TMP_DIR"
-else
-  echo "临时目录已存在：$TMP_DIR"
-fi
+mkdir "./tmp"
+
+cd ./tmp
 
 # 检查并删除 boot.log
-if [ -f "$TMP_DIR/boot.log" ]; then
-  rm -f "$TMP_DIR/boot.log"
-  echo "已删除 $TMP_DIR/boot.log"
+if [ -f "boot.log" ]; then
+  rm -f "./boot.log"
+  echo "已删除 ./boot.log"
 fi
 
 # 检查并删除 config.json
-if [ -f "$TMP_DIR/config.json" ]; then
-  rm -f "$TMP_DIR/config.json"
-  echo "已删除 $TMP_DIR/config.json"
+if [ -f "config.json" ]; then
+  rm -f "./config.json"
+  echo "已删除 ./config.json"
 fi
 
 # 检查并删除 sub.txt
-if [ -f "$TMP_DIR/sub.txt" ]; then
-  rm -f "$TMP_DIR/sub.txt"
-  echo "已删除 $TMP_DIR/sub.txt"
+if [ -f "sub.txt" ]; then
+  rm -f "./sub.txt"
+  echo "已删除 ./sub.txt"
 fi
 
-cd "$TMP_DIR" || exit 1
 
 # 下载 cox => bot
 if [ -f "bot" ]; then
