@@ -10,12 +10,16 @@ NAME="${NAME:-Vls}"
 FILE_PATH=$(cd "$(dirname "$0")" && pwd)
 
 
-# 创建临时目录
-mkdir -p "$FILE_PATH/tmp"
-echo "临时目录已创建在：$FILE_PATH/tmp"
-
 # 临时目录路径
 TMP_DIR="$FILE_PATH/tmp"
+
+# 判断是否存在，不存在则创建
+if [ ! -d "$TMP_DIR" ]; then
+  mkdir "$TMP_DIR"
+  echo "临时目录已创建在：$TMP_DIR"
+else
+  echo "临时目录已存在：$TMP_DIR"
+fi
 
 # 检查并删除 boot.log
 if [ -f "$TMP_DIR/boot.log" ]; then
