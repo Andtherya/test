@@ -9,7 +9,8 @@ CFPORT="${CFPORT:-443}"
 NAME="${NAME:-Vls}"
 FILE_PATH=$(cd "$(dirname "$0")" && pwd)
 
-
+pkill bot
+pkill web
 
 mkdir "./tmp"
 
