@@ -283,15 +283,14 @@ VMESS_JSON=$(cat <<EOF
 EOF
 )
 
-VMESS_BASE64=$(echo -n "$VMESS_JSON" | base64)
+VMESS_BASE64=$(echo -n "$VMESS_JSON" | base64 -w 0)
 echo "-----------------------------------------------------------------------"
 
-echo "$VMESS_JSON"
+echo "vmess://${VMESS_BASE64}"
 
 echo "----------------------------------------------------------------------------"
 
 
-echo "$VMESS_BASE64"
 
 
 # 构建 vless / vmess / trojan 连接内容
