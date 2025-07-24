@@ -1,8 +1,5 @@
-#!/bin/sh
+#!/bin/bash
 
-# -----------------------
-# 环境变量配置（可由外部传入，否则使用默认值）
-# -----------------------
 UUID="${UUID:-5861ed67-f4ae-4e02-868e-9cea7d2d5a9e}"
 ARGO_DOMAIN="${ARGO_DOMAIN:-}"
 ARGO_AUTH="${ARGO_AUTH:-}"
@@ -10,22 +7,35 @@ ARGO_PORT="${ARGO_PORT:-35568}"
 CFIP="${CFIP:-www.visa.com.sg}"
 CFPORT="${CFPORT:-443}"
 NAME="${NAME:-Vls}"
-FILE_PATH="./tmp"
-BOOT_LOG="${FILE_PATH}/boot.log"
+FILE_PATH=$(cd "$(dirname "$0")" && pwd)
 
-pkill -f "./tmp/web" >/dev/null 2>&1
-pkill -f "./tmp/bot" >/dev/null 2>&1
 
-# 创建或确认 tmp 目录存在
-if [ ! -d "$FILE_PATH" ]; then
-    echo "创建 tmp 目录..."
-    mkdir -p "$FILE_PATH"
-else
-    echo "tmp 目录已存在，跳过创建。"
+# 创建临时目录
+mkdir -p "$FILE_PATH/tmp"
+echo "临时目录已创建在：$FILE_PATH/tmp"
+
+# 临时目录路径
+TMP_DIR="$FILE_PATH/tmp"
+
+# 检查并删除 boot.log
+if [ -f "$TMP_DIR/boot.log" ]; then
+  rm -f "$TMP_DIR/boot.log"
+  echo "已删除 $TMP_DIR/boot.log"
 fi
 
-# 进入 tmp 目录
-cd "$FILE_PATH" || { echo "进入 tmp 目录失败，退出。"; exit 1; }
+# 检查并删除 config.json
+if [ -f "$TMP_DIR/config.json" ]; then
+  rm -f "$TMP_DIR/config.json"
+  echo "已删除 $TMP_DIR/config.json"
+fi
+
+# 检查并删除 sub.txt
+if [ -f "$TMP_DIR/sub.txt" ]; then
+  rm -f "$TMP_DIR/sub.txt"
+  echo "已删除 $TMP_DIR/sub.txt"
+fi
+
+cd "$TMP_DIR" || exit 1
 
 # 下载 cox => bot
 if [ -f "bot" ]; then
@@ -177,64 +187,81 @@ cat > config.json <<EOF
 }
 EOF
 
-echo "下载与配置完成，文件位于 $(pwd)"
-
 # 后台启动 web（xr-ay）
 if [ -f "./web" ]; then
   nohup ./web -c ./config.json >/dev/null 2>&1 &
-  sleep 1
-  echo "web 已启动（xr-ay 正在后台运行）"
+  sleep 2
+  ps | grep "web" | grep -v 'grep'
+  echo "web 已启动。"
+  echo "--------------------------------------------------"
 else
   echo "启动失败：web 可执行文件不存在"
   exit 1
 fi
 
-# 判断 bot 是否存在
-if [ -f "./bot" ]; then
-  echo "准备启动 bot (cloudflared)..."
 
-  # 判断 ARGO_AUTH 是否是合法的 token（长度 120~250 且字符匹配）
-  if echo "$ARGO_AUTH" | grep -qE '^[A-Za-z0-9=]{120,250}$'; then
-    ARGS="tunnel --edge-ip-version auto --no-autoupdate --protocol http2 run --token ${ARGO_AUTH}"
-  else
-    # 使用本地端口方式连接（fallback 模式）
-    ARGS="tunnel --edge-ip-version auto --no-autoupdate --protocol http2 --logfile ./boot.log --loglevel info --url http://localhost:${ARGO_PORT}"
-  fi
+# --- Cloudflare Tunnel 处理 ---
+TUNNEL_MODE=""
+FINAL_DOMAIN=""
+TUNNEL_CONNECTED=false
 
-  # 后台运行 bot
-  nohup ./bot $ARGS >/dev/null 2>&1 &
-  echo "bot 已启动"
-
-  # 等待 2 秒稳定
-  sleep 2
-else
-  echo "跳过：bot 文件不存在"
-fi
-
-# 额外等待 5 秒
-sleep 5
-
-# 判断：是否同时存在 ARGO_AUTH 和 ARGO_DOMAIN
+# 检查是否使用固定隧道
 if [ -n "$ARGO_AUTH" ] && [ -n "$ARGO_DOMAIN" ]; then
-  argoDomain="$ARGO_DOMAIN"
-  echo "使用提供的 ARGO_DOMAIN: $argoDomain"
+    TUNNEL_MODE="固定隧道 (Fixed Tunnel)"
+    FINAL_DOMAIN="$ARGO_DOMAIN"
+    echo "检测到 token 和 domain 环境变量，将使用【固定隧道模式】。"
+    echo "隧道域名将是: $FINAL_DOMAIN"
+    echo "Cloudflare Tunnel Token: [已隐藏]"
+    echo "正在启动固定的 Cloudflare 隧道..."
+    ARGS="tunnel --edge-ip-version auto --no-autoupdate --protocol http2 run --token ${ARGO_AUTH}"
+    nohup ./bot $ARGS > ./boot.log 2>&1 &
+
+    echo "正在等待 Cloudflare 固定隧道连接... (最多 30 秒)"
+    for attempt in $(seq 1 15); do
+        sleep 2
+        if grep -q -E "Registered tunnel connection|Connected to .*, an Argo Tunnel an edge" ./boot.log; then
+            TUNNEL_CONNECTED=true
+            break
+        fi
+        echo -n "."
+    done
+    echo "bot 已启动"
+
 else
-  echo "未提供 ARGO_DOMAIN，从 boot.log 中提取..."
-  if [ -f "./boot.log" ]; then
-    argoDomain=$(grep -o 'https://[a-zA-Z0-9-]*\.trycloudflare.com' ./boot.log | head -n 1)
-    if [ -n "$argoDomain" ]; then
-      echo "提取到 Argo 域名: $argoDomain"
-    else
-      echo "未从 boot.log 提取到 Argo 域名"
-    fi
-  else
-    echo "boot.log 文件不存在，无法提取 Argo 域名"
-  fi
+    TUNNEL_MODE="临时隧道 (Temporary Tunnel)"
+    echo "未提供 token 和/或 domain 环境变量，将使用【临时隧道模式】。"
+    echo "正在启动临时的 Cloudflare 隧道..."
+    ARGS="tunnel --edge-ip-version auto --no-autoupdate --protocol http2 --logfile ./boot.log --loglevel info --url http://localhost:${ARGO_PORT}"
+    nohup ./bot $ARGS >/dev/null 2>&1 &
+
+    echo "正在等待 Cloudflare 临时隧道 URL... (最多 30 秒)"
+    for attempt in $(seq 1 15); do
+        sleep 2
+        TEMP_TUNNEL_URL=$(grep -o 'https://[a-zA-Z0-9-]*\.trycloudflare.com' ./boot.log | head -n 1)
+        if [ -n "$TEMP_TUNNEL_URL" ]; then
+            FINAL_DOMAIN=$(echo $TEMP_TUNNEL_URL | awk -F'//' '{print $2}')
+            TUNNEL_CONNECTED=true
+            break
+        fi
+        echo -n "."
+    done
+    echo ""
 fi
+
+# --- 输出结果 ---
+if [ "$TUNNEL_CONNECTED" = "true" ]; then
+    echo "--------------------------------------------------"
+    echo "$TUNNEL_MODE 已成功连接！"
+    echo "公共访问域名: $FINAL_DOMAIN"
+    echo "--------------------------------------------------"
+    echo ""
+
+argoDomain="$FINAL_DOMAIN"
 
 # 获取 ISP 信息
 metaInfo=$(curl -s https://speed.cloudflare.com/meta | awk -F\" '{print $26"-"$18}' | sed -e 's/ /_/g')
 ISP=$(echo "$metaInfo" | tr -d '\n')
+
 
 # 构建 VMESS JSON 并转 base64
 VMESS_JSON=$(cat <<EOF
@@ -269,9 +296,6 @@ trojan://${UUID}@${CFIP}:${CFPORT}?security=tls&sni=${argoDomain}&type=ws&host=$
 EOF
 )
 
-echo "vless://${UUID}@${CFIP}:${CFPORT}?encryption=none&security=tls&sni=${argoDomain}&type=ws&host=${argoDomain}&path=%2Fvless-argo%3Fed%3D2560#${NAME}-${ISP}"
-echo "vmess://${VMESS_BASE64}"
-echo "trojan://${UUID}@${CFIP}:${CFPORT}?security=tls&sni=${argoDomain}&type=ws&host=${argoDomain}&path=%2Ftrojan-argo%3Fed%3D2560#${NAME}-${ISP}"
 # 编码 subTxt 并写入 sub.txt
 echo "$subTxt" | base64 > "${FILE_PATH}/sub.txt"
 echo "${FILE_PATH}/sub.txt saved successfully"
