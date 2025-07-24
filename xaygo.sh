@@ -221,7 +221,7 @@ if [ -n "$ARGO_AUTH" ] && [ -n "$ARGO_DOMAIN" ]; then
 else
   echo "未提供 ARGO_DOMAIN，从 boot.log 中提取..."
   if [ -f "$BOOT_LOG" ]; then
-    argoDomain=$(grep -oE "https?://[a-zA-Z0-9.-]+\.trycloudflare\.com" "$BOOT_LOG" | head -n1 | sed 's#https\?://##')
+    argoDomain=$(grep -o 'https://[a-zA-Z0-9-]*\.trycloudflare.com' ./boot.log | head -n 1)
     if [ -n "$argoDomain" ]; then
       echo "提取到 Argo 域名: $argoDomain"
     else
@@ -269,6 +269,9 @@ trojan://${UUID}@${CFIP}:${CFPORT}?security=tls&sni=${argoDomain}&type=ws&host=$
 EOF
 )
 
+echo "vless://${UUID}@${CFIP}:${CFPORT}?encryption=none&security=tls&sni=${argoDomain}&type=ws&host=${argoDomain}&path=%2Fvless-argo%3Fed%3D2560#${NAME}-${ISP}"
+echo "vmess://${VMESS_BASE64}"
+echo "trojan://${UUID}@${CFIP}:${CFPORT}?security=tls&sni=${argoDomain}&type=ws&host=${argoDomain}&path=%2Ftrojan-argo%3Fed%3D2560#${NAME}-${ISP}"
 # 编码 subTxt 并写入 sub.txt
 echo "$subTxt" | base64 > "${FILE_PATH}/sub.txt"
 echo "${FILE_PATH}/sub.txt saved successfully"
