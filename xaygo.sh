@@ -220,8 +220,8 @@ if [ -n "$ARGO_AUTH" ] && [ -n "$ARGO_DOMAIN" ]; then
   echo "使用提供的 ARGO_DOMAIN: $argoDomain"
 else
   echo "未提供 ARGO_DOMAIN，从 boot.log 中提取..."
-  if [ -f "$BOOT_LOG" ]; then
-    argoDomain=$(grep -o 'https://[a-zA-Z0-9-]*\.trycloudflare.com' ./tmp/boot.log | head -n 1)
+  if [ -f "./boot.log" ]; then
+    argoDomain=$(grep -o 'https://[a-zA-Z0-9-]*\.trycloudflare.com' ./boot.log | head -n 1)
     if [ -n "$argoDomain" ]; then
       echo "提取到 Argo 域名: $argoDomain"
     else
