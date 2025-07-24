@@ -7,12 +7,11 @@ ARGO_PORT="${ARGO_PORT:-35568}"
 CFIP="${CFIP:-www.visa.com.sg}"
 CFPORT="${CFPORT:-443}"
 NAME="${NAME:-Vls}"
-FILE_PATH=$(cd "$(dirname "$0")" && pwd)
 
 pkill bot
 pkill web
 
-mkdir "./tmp"
+mkdir -p "./tmp"
 
 cd ./tmp
 
