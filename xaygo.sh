@@ -252,6 +252,7 @@ if [ "$TUNNEL_CONNECTED" = "true" ]; then
     echo "公共访问域名: $FINAL_DOMAIN"
     echo "--------------------------------------------------"
     echo ""
+fi
 
 argoDomain="$FINAL_DOMAIN"
 
@@ -299,3 +300,4 @@ echo "${FILE_PATH}/sub.txt saved successfully"
 
 # 输出 base64 结果（可用于 curl 返回）
 echo "$subTxt" | base64
+
