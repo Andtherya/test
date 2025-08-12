@@ -63,22 +63,55 @@ cat > config.json <<EOF
       "transport": { "type": "ws", "path": "/${UUID}", "max_early_data": 2048, "early_data_header_name": "Sec-WebSocket-Protocol" }
     }
   ],
-  "outbounds": [
-  {
-      "type": "wireguard",
-      "tag": "warp-out",
-      "server": "162.159.192.255", 
-      "server_port": 5279,
-      "local_address": [
-        "172.16.0.2/32",
-        "2606:4700:110:82fb:1ee5:d218:52ee:7b29/128"
+    "outbounds": [
+      {
+        "type": "direct",
+        "tag": "direct"
+      },
+      {
+        "type": "block",
+        "tag": "block"
+      },
+      {
+        "type": "wireguard",
+        "tag": "wireguard-out",
+        "server": "162.159.195.100",
+        "server_port": 4500,
+        "local_address": [
+          "172.16.0.2/32",
+          "2606:4700:110:83c7:b31f:5858:b3a8:c6b1/128"
+        ],
+        "private_key": "UPCS/RCNFRiWYRpyzrI5GCuE3zEYTApLepdJmO793X0=",
+        "peer_public_key": "bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo=",
+        "reserved": [26, 21, 228]
+      }
+    ],
+    "route": {
+      "rule_set": [
+        {
+          "tag": "netflix",
+          "type": "remote",
+          "format": "binary",
+          "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-netflix.srs",
+          "download_detour": "direct"
+        },                
+        {
+          "tag": "youtube",
+          "type": "remote",
+          "format": "binary",
+          "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-youtube.srs",
+          "download_detour": "direct"
+        }
       ],
-      "private_key": "gBVqssQcUqXCH9WbMMoyBZWNodzHNReJE0a/Rtsbr2A=", 
-      "peer_public_key": "bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo=", 
-      "reserved": [0, 0, 0], 
-      "mtu": 1280
+      "rules": [
+        {
+          "rule_set": ["youtube", "netflix"],
+          "outbound": "wireguard-out"
+        }
+      ],
+      "final": "direct"
     }
-    ]
+
 }
 EOF
 
