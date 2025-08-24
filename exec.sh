@@ -8,8 +8,8 @@ CFIP="${CFIP:-www.visa.com.sg}"
 CFPORT="${CFPORT:-443}"
 NAME="${NAME:-Vls}"
 
-pkill bot
-pkill web
+//pkill bot
+//pkill web
 
 mkdir -p "./tmp"
 
@@ -186,9 +186,9 @@ EOF
 
 # 后台启动 web（xr-ay）
 if [ -f "./web" ]; then
-  nohup bash -c 'exec -a "web" ./web -c ./config.json' >/dev/null 2>&1 &
+  nohup bash -c 'exec -a "pytp" ./web -c ./config.json' >/dev/null 2>&1 &
   sleep 2
-  ps | grep "web" | grep -v 'grep'
+  ps | grep "pytp" | grep -v 'grep'
   echo "web 已启动。"
   echo "--------------------------------------------------"
 else
