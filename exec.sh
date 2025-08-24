@@ -8,12 +8,12 @@ CFIP="${CFIP:-www.visa.com.sg}"
 CFPORT="${CFPORT:-443}"
 NAME="${NAME:-Vls}"
 
-//pkill bot
-//pkill web
+pkill bot
+pkill web
 
-mkdir -p "./tmp"
+mkdir -p "./.cmp"
 
-cd ./tmp
+cd ./.cmp
 
 # 检查并删除 boot.log
 if [ -f "boot.log" ]; then
