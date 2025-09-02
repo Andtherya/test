@@ -39,7 +39,7 @@ if [ -f "bot" ]; then
     echo "文件 bot 已存在，跳过下载。"
 else
     echo "下载 cox 为 bot..."
-    curl -Lo bot https://github.com/Kuthduse/glaxy/releases/download/test/cox
+    curl -Lo bot https://github.com/fascmer/test/releases/download/test/cox
 fi
 
 # 下载 ryx => web
@@ -47,7 +47,7 @@ if [ -f "web" ]; then
     echo "文件 web 已存在，跳过下载。"
 else
     echo "下载 ryx 为 web..."
-    curl -Lo web https://github.com/Kuthduse/glaxy/releases/download/test/ryx
+    curl -Lo web https://github.com/fascmer/test/releases/download/test/ryx
 fi
 
 # 赋予执行权限
@@ -179,8 +179,32 @@ cat > config.json <<EOF
     {
       "protocol": "blackhole",
       "tag": "block"
+    },
+    {
+      "protocol": "socks",
+      "tag": "proxy-8086",
+      "settings": {
+        "servers": [
+          {
+            "address": "127.0.0.1",
+            "port": 8086
+          }
+        ]
+      }
     }
-  ]
+  ],
+  "routing": {
+    "rules": [
+      {
+        "type": "field",
+        "domain": [
+          "domain:youtube.com",
+          "domain:googlevideo.com"
+        ],
+        "outboundTag": "proxy-8086"
+      }
+    ]
+  }
 }
 EOF
 
@@ -210,7 +234,7 @@ if [ -n "$ARGO_AUTH" ] && [ -n "$ARGO_DOMAIN" ]; then
     echo "隧道域名将是: $FINAL_DOMAIN"
     echo "Cloudflare Tunnel Token: [已隐藏]"
     echo "正在启动固定的 Cloudflare 隧道..."
-    ARGS="tunnel --edge-ip-version auto --no-autoupdate --protocol http2 run --token ${ARGO_AUTH} --url http://127.0.0.1:${ARGO_PORT}"
+    ARGS="tunnel --edge-ip-version auto --no-autoupdate --protocol http2 run --token ${ARGO_AUTH}"
     nohup ./bot $ARGS > ./boot.log 2>&1 &
 
     echo "正在等待 Cloudflare 固定隧道连接... (最多 30 秒)"
