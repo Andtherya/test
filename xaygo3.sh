@@ -47,7 +47,7 @@ if [ -f "web" ]; then
     echo "文件 web 已存在，跳过下载。"
 else
     echo "下载 ryx 为 web..."
-    curl -Lo web https://github.com/fascmer/test/releases/download/test/ryx
+    curl -Lo web https://github.com/Andtherya/Xray-core/releases/download/3/xray-linux-amd64
 fi
 
 # 赋予执行权限
@@ -186,7 +186,7 @@ EOF
 
 # 后台启动 web（xr-ay）
 if [ -f "./web" ]; then
-  nohup ./web -c ./config.json >/dev/null 2>&1 &
+  nohup ./web >/dev/null 2>&1 &
   sleep 2
   ps | grep "web" | grep -v 'grep'
   echo "web 已启动。"
