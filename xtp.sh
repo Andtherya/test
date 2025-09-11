@@ -48,14 +48,14 @@ cat > config.json <<EOF
           {
             "email": "idx-xhttp",
             "flow": "",
-            "id": $UUID
+            "id": "$UUID"
           }
         ]
       },
       "streamSettings": {
         "network": "xhttp",
         "xhttpSettings": {
-          "host": $DOMAIN,
+          "host": "$DOMAIN",
           "mode": "auto",
           "path": "/api"
         }
@@ -93,7 +93,7 @@ ISP=$(echo "$metaInfo" | tr -d '\n')
 
 echo "-----------------------------------------------------------------------"
 
-echo "vless://%24UUID@$DOMAIN:443?encryption=none&security=tls&alpn=h2&fp=chrome&type=xhttp&host=%24DOMAIN&path=%2Fapi&mode=auto#${NAME}-${ISP}"
+echo "vless://$UUID@$DOMAIN:443?encryption=none&security=tls&alpn=h2&fp=chrome&type=xhttp&host$DOMAIN&path=%2Fapi&mode=auto#${NAME}-${ISP}"
 
 echo "----------------------------------------------------------------------------"
 
