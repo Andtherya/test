@@ -55,9 +55,9 @@ cat > config.json <<EOF
       "streamSettings": {
         "network": "xhttp",
         "xhttpSettings": {
-          "host": "$new_domain",
+          "host": "",
           "mode": "auto",
-          "path": "/api"
+          "path": "/"
         }
       }
     }
@@ -124,6 +124,5 @@ echo "-----------------------------------------------------------------------"
 echo "vless://${UUID}@${new_domain}:443?encryption=none&security=tls&alpn=h2&fp=chrome&type=xhttp&path=%2F&mode=auto#idx-xhttp#${NAME}-${ISP}"
 
 echo "----------------------------------------------------------------------------"
-
 
 
