@@ -39,7 +39,6 @@ cat > config.json <<EOF
   },
   "inbounds": [
     {
-      "listen": null,
       "port": $PORT,
       "protocol": "vless",
       "settings": {
@@ -55,18 +54,46 @@ cat > config.json <<EOF
       "streamSettings": {
         "network": "xhttp",
         "xhttpSettings": {
-          "host": "$DOMAIN",
+          "host": "",
           "mode": "auto",
-          "path": "/api"
+          "path": "/"
         }
       }
     }
   ],
   "outbounds": [
     {
-      "protocol": "freedom"
+      "protocol": "freedom",
+      "tag": "direct"
+    },
+    {
+      "protocol": "blackhole",
+      "tag": "block"
+    },
+    {
+      "protocol": "socks",
+      "tag": "proxy-8086",
+      "settings": {
+        "servers": [
+          {
+            "address": "127.0.0.1",
+            "port": 8086
+          }
+        ]
+      }
     }
-  ]
+  ],
+  "routing": {
+    "rules": [
+      {
+        "type": "field",
+        "domain": [
+          "domain:googlevideo.com"
+        ],
+        "outboundTag": "proxy-8086"
+      }
+    ]
+  }
 }
 EOF
 
@@ -93,7 +120,7 @@ ISP=$(echo "$metaInfo" | tr -d '\n')
 
 echo "-----------------------------------------------------------------------"
 
-echo "vless://$UUID@$DOMAIN:443?encryption=none&security=tls&alpn=h2&fp=chrome&type=xhttp&host$DOMAIN&path=%2Fapi&mode=auto#${NAME}-${ISP}"
+echo "vless://${UUID}@${DOMAIN}:443?encryption=none&security=tls&alpn=h2&fp=chrome&type=xhttp&path=%2F&mode=auto#idx-xhttp#${NAME}-${ISP}"
 
 echo "----------------------------------------------------------------------------"
 
