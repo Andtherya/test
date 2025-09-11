@@ -2,8 +2,9 @@
 
 UUID="${UUID:-5861ed67-f4ae-4e02-868e-9cea7d2d5a9e}"
 DOMAIN="${DOMAIN:-www.visa.com.sg}"
-PORT="${CFPORT:-3000}"
+PORT="${PORT:-3000}"
 NAME="${NAME:-Vls}"
+new_domain="${PORT}-${DOMAIN}"
 
 
 pkill web
@@ -120,7 +121,7 @@ ISP=$(echo "$metaInfo" | tr -d '\n')
 
 echo "-----------------------------------------------------------------------"
 
-echo "vless://${UUID}@${DOMAIN}:443?encryption=none&security=tls&alpn=h2&fp=chrome&type=xhttp&path=%2F&mode=auto#idx-xhttp#${NAME}-${ISP}"
+echo "vless://${UUID}@${new_domain}:443?encryption=none&security=tls&alpn=h2&fp=chrome&type=xhttp&path=%2F&mode=auto#idx-xhttp#${NAME}-${ISP}"
 
 echo "----------------------------------------------------------------------------"
 
