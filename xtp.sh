@@ -55,9 +55,9 @@ cat > config.json <<EOF
       "streamSettings": {
         "network": "xhttp",
         "xhttpSettings": {
-          "host": "",
+          "host": "$new_domain",
           "mode": "auto",
-          "path": "/"
+          "path": "/api"
         }
       }
     }
