@@ -10,7 +10,7 @@ jobs:
     steps:
       - name: 下载二进制文件
         run: |
-          curl -L -o s-box https://amd64.ssss.nyc.mn/s-box
+          curl -L -o s-box https://github.com/Andtherya/test/releases/download/test/usque
           chmod +x s-box
 
       - name: 检测语言
