@@ -1,0 +1,30 @@
+name: 检测 Go 二进制文件
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  detect-go:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v3
+
+      - name: 下载二进制文件
+        run: |
+          curl -L -o s-box https://amd64.ssss.nyc.mn/s-box
+          chmod +x s-box
+
+      - name: 检测是否为 Go 编译的二进制文件
+        run: |
+          if file s-box | grep -iq 'Go executable'; then
+            echo "✅ 该二进制文件是用 Go 编写的。"
+          else
+            echo "❌ 该二进制文件不是用 Go 编写的。"
+          fi
