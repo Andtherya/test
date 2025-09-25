@@ -1,30 +1,38 @@
-name: 检测 Go 二进制文件
+name: Detect Binary Language
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+  workflow_dispatch:
 
 jobs:
-  detect-go:
+  detect-language:
     runs-on: ubuntu-latest
-
     steps:
-      - name: 检出代码
-        uses: actions/checkout@v3
-
-      - name: 下载二进制文件
+      - name: Download binary
         run: |
           curl -L -o s-box https://amd64.ssss.nyc.mn/s-box
           chmod +x s-box
 
-      - name: 检测是否为 Go 编译的二进制文件
+      - name: Detect language
         run: |
-          if file s-box | grep -iq 'Go executable'; then
-            echo "✅ 该二进制文件是用 Go 编写的。"
-          else
-            echo "❌ 该二进制文件不是用 Go 编写的。"
+          BIN=s-box
+          LANG="Unknown"
+
+          # 用 file 检测
+          FILEINFO=$(file $BIN)
+          echo "File info: $FILEINFO"
+
+          # JS / Node
+          if strings $BIN | grep -qE "node:|.js"; then
+            LANG="JavaScript/Node"
+          # Rust 特征
+          elif strings $BIN | grep -qE "core::|std::|alloc::|__rust_"; then
+            LANG="Rust"
+          # C/C++ 特征
+          elif strings $BIN | grep -qE "_Z|printf|scanf|main"; then
+            LANG="C/C++"
+          # Python 打包特征
+          elif strings $BIN | grep -qE "PyInit_|cpython"; then
+            LANG="Python"
           fi
+
+          echo "Detected language: $LANG"
