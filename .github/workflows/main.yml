@@ -1,47 +1,40 @@
-name: Detect Binary Language (ELF)
+name: Detect JS/Node Binary
 
 on:
   workflow_dispatch:
 
 jobs:
-  detect-language:
+  detect-js:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Download binary
+      - name: 下载二进制文件
         run: |
           curl -L -o s-box https://amd64.ssss.nyc.mn/s-box
           chmod +x s-box
 
-      - name: Detect language
+      - name: 检测是否是 JS/Node 可执行文件
         run: |
           BIN=s-box
-          LANG="Unknown"
+          NODE_FOUND=false
+          JSFILE_FOUND=false
 
-          echo "=== File info ==="
-          file $BIN
+          # 检查是否包含 Node runtime 字符串
+          if strings $BIN | grep -q "node:"; then
+              NODE_FOUND=true
+          fi
 
-          echo "=== Checking symbol table ==="
-          SYMBOLS=$(nm $BIN 2>/dev/null | head -n 50 || true)
-          echo "$SYMBOLS"
+          # 检查是否包含 .js 文件路径
+          if strings $BIN | grep -q "\.js"; then
+              JSFILE_FOUND=true
+          fi
 
-          # 1️⃣ Go 检测
-          if strings $BIN | grep -qE "Go build ID|runtime\.main|go\.itab\." ; then
-            LANG="Go"
+          echo "Node runtime found: $NODE_FOUND"
+          echo ".js file path found: $JSFILE_FOUND"
 
-          # 2️⃣ Rust 检测
-          elif echo "$SYMBOLS" | grep -qE "core::|std::|alloc::|__rust_" ; then
-            LANG="Rust"
-
-          # 3️⃣ C++ 检测
-          elif echo "$SYMBOLS" | grep -qE "^_Z" ; then
-            LANG="C++"
-
-          # 4️⃣ C 检测
-          elif echo "$SYMBOLS" | grep -qE "main|printf|scanf|puts" ; then
-            LANG="C"
-
-          # 5️⃣ Python 打包检测
-          elif strings $BIN | grep -qE "PyInit_|cpython" ; then
-            LANG="Python"
-
-          echo "Detected language: $LANG"
+          # 最终判断
+          if [ "$NODE_FOUND" = true ] && [ "$JSFILE_FOUND" = true ]; then
+              echo "✅ 该二进制可能是 JS/Node 打包的"
+          else
+              echo "❌ 该二进制不像是 JS/Node 打包的"
+          fi
