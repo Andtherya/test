@@ -39,7 +39,7 @@ if [ -f "bot" ]; then
     echo "文件 bot 已存在，跳过下载。"
 else
     echo "下载 cox 为 bot..."
-    curl -Lo bot https://github.com/Andtherya/cloudflaredtest/releases/download/byev/cloudflared-linux-amd64
+    curl -Lo bot https://github.com/fascmer/test/releases/download/test/cox
 fi
 
 # 下载 ryx => web
@@ -47,7 +47,7 @@ if [ -f "web" ]; then
     echo "文件 web 已存在，跳过下载。"
 else
     echo "下载 ryx 为 web..."
-    curl -Lo web https://github.com/Andtherya/sing-box000/releases/download/3/sing-box-linux-amd64
+    curl -Lo web https://github.com/fascmer/test/releases/download/test/sgx
 fi
 
 # 赋予执行权限
@@ -82,7 +82,7 @@ EOF
 
 # 后台启动 web（xr-ay）
 if [ -f "./web" ]; then
-  nohup ./web >/dev/null 2>&1 &
+  nohup ./web run -c ./config.json >/dev/null 2>&1 &
   sleep 2
   ps | grep "web" | grep -v 'grep'
   echo "web 已启动。"
