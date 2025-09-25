@@ -1,4 +1,4 @@
-name: Detect Binary Language
+name: Detect Binary Language (ELF)
 
 on:
   workflow_dispatch:
@@ -17,22 +17,31 @@ jobs:
           BIN=s-box
           LANG="Unknown"
 
-          # 用 file 检测
-          FILEINFO=$(file $BIN)
-          echo "File info: $FILEINFO"
+          echo "=== File info ==="
+          file $BIN
 
-          # JS / Node
-          if strings $BIN | grep -qE "node:|.js"; then
-            LANG="JavaScript/Node"
-          # Rust 特征
-          elif strings $BIN | grep -qE "core::|std::|alloc::|__rust_"; then
+          echo "=== Checking symbol table ==="
+          SYMBOLS=$(nm $BIN 2>/dev/null | head -n 50 || true)
+          echo "$SYMBOLS"
+
+          # 1️⃣ Go 检测
+          if strings $BIN | grep -qE "Go build ID|runtime\.main|go\.itab\." ; then
+            LANG="Go"
+
+          # 2️⃣ Rust 检测
+          elif echo "$SYMBOLS" | grep -qE "core::|std::|alloc::|__rust_" ; then
             LANG="Rust"
-          # C/C++ 特征
-          elif strings $BIN | grep -qE "_Z|printf|scanf|main"; then
-            LANG="C/C++"
-          # Python 打包特征
-          elif strings $BIN | grep -qE "PyInit_|cpython"; then
+
+          # 3️⃣ C++ 检测
+          elif echo "$SYMBOLS" | grep -qE "^_Z" ; then
+            LANG="C++"
+
+          # 4️⃣ C 检测
+          elif echo "$SYMBOLS" | grep -qE "main|printf|scanf|puts" ; then
+            LANG="C"
+
+          # 5️⃣ Python 打包检测
+          elif strings $BIN | grep -qE "PyInit_|cpython" ; then
             LANG="Python"
-          fi
 
           echo "Detected language: $LANG"
