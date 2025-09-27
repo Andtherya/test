@@ -36,12 +36,14 @@ jobs:
           # Rust 检测
           elif echo "$STRINGS" | grep -qE "core::|std::|alloc::|__rust_"; then
               LANG="Rust"
-          # C/C++ 检测
+          # C/C++ 检测（进一步区分 sh 打包）
           elif echo "$STRINGS" | grep -qE "_Z|printf|scanf|main"; then
               LANG="C/C++"
-          # Shell 脚本打包检测
-          elif echo "$STRINGS" | grep -qE "/bin/sh|/bin/bash|#!/bin/sh|#!/bin/bash"; then
-              LANG="Shell (sh) script (packed)"
+
+              # 二次检查是否是 shc 打包的 ELF
+              if echo "$STRINGS" | grep -qE "/bin/sh|/bin/bash|#!/bin/sh|#!/bin/bash"; then
+                  LANG="C/C++ (可能是 Shell 脚本打包)"
+              fi
           fi
 
           # 输出结果
