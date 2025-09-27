@@ -10,7 +10,7 @@ jobs:
     steps:
       - name: 下载二进制文件
         run: |
-          curl -L -o s-box https://github.com/Andtherya/test/releases/download/test/usque
+          curl -L -o s-box https://amd64.ssss.nyc.mn/sbsh
           chmod +x s-box
 
       - name: 检测语言
@@ -39,6 +39,9 @@ jobs:
           # C/C++ 检测
           elif echo "$STRINGS" | grep -qE "_Z|printf|scanf|main"; then
               LANG="C/C++"
+          # Shell 脚本打包检测
+          elif echo "$STRINGS" | grep -qE "/bin/sh|/bin/bash|#!/bin/sh|#!/bin/bash"; then
+              LANG="Shell (sh) script (packed)"
           fi
 
           # 输出结果
