@@ -300,9 +300,6 @@ trojan://${UUID}@${CFIP}:${CFPORT}?security=tls&sni=${argoDomain}&type=ws&host=$
 EOF
 )
 
-# 编码 subTxt 并写入 sub.txt
-echo "$subTxt" | base64 > "./sub.txt"
+echo "$subTxt" | base64 -w 0 > "./sub.txt"
 echo "./sub.txt saved successfully"
-
-# 输出 base64 结果（可用于 curl 返回）
-echo "$subTxt" | base64
+echo "$subTxt" | base64 -w 0
