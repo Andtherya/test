@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export ALL_PROXY="socks5://socks5:socks5@38.47.125.251:5555"
+#export ALL_PROXY="socks5://socks5:socks5@38.47.125.251:5555"
 
 UUID="${UUID:-5861ed67-f4ae-4e02-868e-9cea7d2d5a9e}"
 ARGO_DOMAIN="${ARGO_DOMAIN:-}"
