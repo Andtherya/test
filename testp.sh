@@ -1,7 +1,5 @@
 #!/bin/bash
 
-
-
 UUID="${UUID:-5861ed67-f4ae-4e02-868e-9cea7d2d5a9e}"
 ARGO_DOMAIN="${ARGO_DOMAIN:-}"
 ARGO_AUTH="${ARGO_AUTH:-}"
@@ -10,7 +8,6 @@ CFIP="${CFIP:-www.visa.com.sg}"
 CFPORT="${CFPORT:-443}"
 NAME="${NAME:-Vls}"
 
-curl -4 ifconfig.me
 pkill bot
 pkill web
 
@@ -176,12 +173,21 @@ cat > config.json <<EOF
   },
   "outbounds": [
     {
-      "protocol": "freedom",
-      "tag": "direct"
-    },
-    {
-      "protocol": "blackhole",
-      "tag": "block"
+      "protocol": "socks",
+      "settings": {
+        "servers": [
+          {
+            "address": "23.139.124.180",
+            "port": 5782,
+            "users": [
+              {
+                "user": "99r2hb20",
+                "pass": "ZFlYG988O2kF"
+              }
+            ]
+          }
+        ]
+      }
     }
   ]
 }
