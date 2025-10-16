@@ -1,6 +1,9 @@
 #!/bin/bash
 # 一键部署 OpenRC 服务：bot + web
 
+pkill bot
+pkill web
+
 # === 配置区 ===
 ARGO_AUTH="${ARGO_AUTH:-}"
 WORKDIR="${WORKDIR:-/root/tmp}"
