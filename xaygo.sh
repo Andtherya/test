@@ -7,6 +7,7 @@ ARGO_PORT="${ARGO_PORT:-35568}"
 CFIP="${CFIP:-www.visa.com.sg}"
 CFPORT="${CFPORT:-443}"
 NAME="${NAME:-Vls}"
+VLPORT="${CFPORT:-3001}"
 
 pkill bot
 pkill web
@@ -74,7 +75,7 @@ cat > config.json <<EOF
         ],
         "decryption": "none",
         "fallbacks": [
-          { "dest": 3001 },
+          { "dest": $VLPORT },
           { "path": "/vless-argo", "dest": 3002 },
           { "path": "/vmess-argo", "dest": 3003 },
           { "path": "/trojan-argo", "dest": 3004 }
@@ -85,7 +86,7 @@ cat > config.json <<EOF
       }
     },
     {
-      "port": 3001,
+      "port": $VLPORT,
       "listen": "127.0.0.1",
       "protocol": "vless",
       "settings": {
