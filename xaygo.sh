@@ -7,7 +7,7 @@ ARGO_PORT="${ARGO_PORT:-35568}"
 CFIP="${CFIP:-www.visa.com.sg}"
 CFPORT="${CFPORT:-443}"
 NAME="${NAME:-Vls}"
-VLPORT="${CFPORT:-3001}"
+VLPORT="${VLPORT:-3001}"
 
 pkill bot
 pkill web
