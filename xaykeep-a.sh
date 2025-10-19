@@ -52,7 +52,7 @@ rc-update add web default
 rc-update add bot default
 
 # === 启动服务 ===
-rc-service web start
-rc-service bot start
+rc-service web restart
+rc-service bot restart
 
 echo "✅ bot 与 web 服务已部署并启动完成！"
