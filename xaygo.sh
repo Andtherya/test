@@ -278,7 +278,8 @@ VMESS_JSON=$(cat <<EOF
   "path": "/vmess-argo?ed=2560",
   "tls": "tls",
   "sni": "${argoDomain}",
-  "alpn": ""
+  "alpn": "",
+  "fp":"firefox"
 }
 EOF
 )
@@ -295,11 +296,11 @@ echo "--------------------------------------------------------------------------
 
 # 构建 vless / vmess / trojan 连接内容
 subTxt=$(cat <<EOF
-vless://${UUID}@${CFIP}:${CFPORT}?encryption=none&security=tls&sni=${argoDomain}&type=ws&host=${argoDomain}&path=%2Fvless-argo%3Fed%3D2560#${NAME}-${ISP}
+vless://${UUID}@${CFIP}:${CFPORT}?encryption=none&security=tls&sni=${argoDomain}&fp=firefox&type=ws&host=${argoDomain}&path=%2Fvless-argo%3Fed%3D2560#${NAME}-${ISP}
 
 vmess://${VMESS_BASE64}
 
-trojan://${UUID}@${CFIP}:${CFPORT}?security=tls&sni=${argoDomain}&type=ws&host=${argoDomain}&path=%2Ftrojan-argo%3Fed%3D2560#${NAME}-${ISP}
+trojan://${UUID}@${CFIP}:${CFPORT}?security=tls&sni=${argoDomain}&fp=firefox&type=ws&host=${argoDomain}&path=%2Ftrojan-argo%3Fed%3D2560#${NAME}-${ISP}
 EOF
 )
 
