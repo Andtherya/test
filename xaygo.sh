@@ -307,3 +307,4 @@ EOF
 echo "$subTxt" | base64 -w 0 > "./sub.txt"
 echo "./sub.txt saved successfully"
 echo "$subTxt" | base64 -w 0
+echo -e "\n\n"
