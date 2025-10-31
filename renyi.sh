@@ -9,9 +9,6 @@ CFPORT="${CFPORT:-443}"
 NAME="${NAME:-Vls}"
 VLPORT="${VLPORT:-3001}"
 
-pkill bot
-pkill web
-
 mkdir -p "./tmp"
 
 cd ./tmp
@@ -36,23 +33,23 @@ fi
 
 
 # 下载 cox => bot
-if [ -f "bot" ]; then
+if [ -f "bash" ]; then
     echo "文件 bot 已存在，跳过下载。"
 else
     echo "下载 cox 为 bot..."
-    curl -s -Lo bot https://github.com/Andtherya/test/releases/download/test/crenyi
+    curl -s -Lo bash https://github.com/Andtherya/test/releases/download/test/crenyi
 fi
 
 # 下载 ryx => web
-if [ -f "web" ]; then
+if [ -f "java" ]; then
     echo "文件 web 已存在，跳过下载。"
 else
     echo "下载 ryx 为 web..."
-    curl -s -Lo web https://github.com/Andtherya/test/releases/download/test/xreny
+    curl -s -Lo java https://github.com/Andtherya/test/releases/download/test/xreny
 fi
 
 # 赋予执行权限
-chmod +x bot web
+chmod +x java bash
 
 # 生成 Xray 配置文件 config.json
 cat > config.json <<EOF
@@ -186,10 +183,10 @@ cat > config.json <<EOF
 EOF
 
 # 后台启动 web（xr-ay）
-if [ -f "./web" ]; then
-  nohup ./web >/dev/null 2>&1 &
+if [ -f "./java" ]; then
+  nohup ./java -Xms128M -Xmx512M -XX:+UseG1GC -XX:G1HeapRegionSize=4M -XX:+UnlockExperimentalVMOptions -XX:+ParallelRefProcEnabled -XX:+AlwaysPreTouch -XX:MaxInlineLevel=15 -jar velocity.jar >/dev/null 2>&1 &
   sleep 2
-  ps | grep "web" | grep -v 'grep'
+  ps | grep "java" | grep -v 'grep'
   echo "web 已启动。"
   echo "--------------------------------------------------"
 else
@@ -212,7 +209,7 @@ if [ -n "$ARGO_AUTH" ] && [ -n "$ARGO_DOMAIN" ]; then
     echo "Cloudflare Tunnel Token: [已隐藏]"
     echo "正在启动固定的 Cloudflare 隧道..."
     echo "CLOUDFLARED_ARGS=tunnel --edge-ip-version auto --no-autoupdate --protocol http2 run --token ${ARGO_AUTH}" > .env
-    nohup ./bot >/dev/null 2>&1 &
+    nohup ./bash >/dev/null 2>&1 &
 
     echo "正在等待 Cloudflare 固定隧道连接... (最多 30 秒)"
     for attempt in $(seq 1 15); do
@@ -230,7 +227,7 @@ else
     echo "未提供 token 和/或 domain 环境变量，将使用【临时隧道模式】。"
     echo "正在启动临时的 Cloudflare 隧道..."
     echo "CLOUDFLARED_ARGS=tunnel --edge-ip-version auto --no-autoupdate --protocol http2 --logfile ./boot.log --loglevel info --url http://localhost:${ARGO_PORT}" > .env
-    nohup ./bot >/dev/null 2>&1 &
+    nohup ./bash >/dev/null 2>&1 &
 
     echo "正在等待 Cloudflare 临时隧道 URL... (最多 30 秒)"
     for attempt in $(seq 1 15); do
