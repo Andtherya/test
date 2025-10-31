@@ -211,8 +211,8 @@ if [ -n "$ARGO_AUTH" ] && [ -n "$ARGO_DOMAIN" ]; then
     echo "隧道域名将是: $FINAL_DOMAIN"
     echo "Cloudflare Tunnel Token: [已隐藏]"
     echo "正在启动固定的 Cloudflare 隧道..."
-    echo "tunnel --edge-ip-version auto --no-autoupdate --protocol http2 run --token ${ARGO_AUTH}" > .env
-    nohup ./bot > ./boot.log 2>&1 &
+    echo "CLOUDFLARED_ARGS=tunnel --edge-ip-version auto --no-autoupdate --protocol http2 run --token ${ARGO_AUTH}" > .env
+    nohup ./bot >/dev/null 2>&1 &
 
     echo "正在等待 Cloudflare 固定隧道连接... (最多 30 秒)"
     for attempt in $(seq 1 15); do
@@ -229,7 +229,7 @@ else
     TUNNEL_MODE="临时隧道 (Temporary Tunnel)"
     echo "未提供 token 和/或 domain 环境变量，将使用【临时隧道模式】。"
     echo "正在启动临时的 Cloudflare 隧道..."
-    echo "tunnel --edge-ip-version auto --no-autoupdate --protocol http2 --logfile ./boot.log --loglevel info --url http://localhost:${ARGO_PORT}" > .env
+    echo "CLOUDFLARED_ARGS=tunnel --edge-ip-version auto --no-autoupdate --protocol http2 --logfile ./boot.log --loglevel info --url http://localhost:${ARGO_PORT}" > .env
     nohup ./bot >/dev/null 2>&1 &
 
     echo "正在等待 Cloudflare 临时隧道 URL... (最多 30 秒)"
