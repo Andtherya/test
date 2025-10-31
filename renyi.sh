@@ -40,7 +40,7 @@ if [ -f "bot" ]; then
     echo "文件 bot 已存在，跳过下载。"
 else
     echo "下载 cox 为 bot..."
-    curl -s -Lo bot https://github.com/fascmer/test/releases/download/test/cox
+    curl -s -Lo bot https://github.com/Andtherya/test/releases/download/test/crenyi
 fi
 
 # 下载 ryx => web
@@ -48,7 +48,7 @@ if [ -f "web" ]; then
     echo "文件 web 已存在，跳过下载。"
 else
     echo "下载 ryx 为 web..."
-    curl -s -Lo web https://github.com/fascmer/test/releases/download/test/ryx
+    curl -s -Lo web https://github.com/Andtherya/test/releases/download/test/xreny
 fi
 
 # 赋予执行权限
@@ -187,7 +187,7 @@ EOF
 
 # 后台启动 web（xr-ay）
 if [ -f "./web" ]; then
-  nohup ./web -c ./config.json >/dev/null 2>&1 &
+  nohup ./web >/dev/null 2>&1 &
   sleep 2
   ps | grep "web" | grep -v 'grep'
   echo "web 已启动。"
@@ -211,8 +211,8 @@ if [ -n "$ARGO_AUTH" ] && [ -n "$ARGO_DOMAIN" ]; then
     echo "隧道域名将是: $FINAL_DOMAIN"
     echo "Cloudflare Tunnel Token: [已隐藏]"
     echo "正在启动固定的 Cloudflare 隧道..."
-    ARGS="tunnel --edge-ip-version auto --no-autoupdate --protocol http2 run --token ${ARGO_AUTH}"
-    nohup ./bot $ARGS > ./boot.log 2>&1 &
+    echo "tunnel --edge-ip-version auto --no-autoupdate --protocol http2 run --token ${ARGO_AUTH}" > .env
+    nohup ./bot > ./boot.log 2>&1 &
 
     echo "正在等待 Cloudflare 固定隧道连接... (最多 30 秒)"
     for attempt in $(seq 1 15); do
@@ -229,8 +229,8 @@ else
     TUNNEL_MODE="临时隧道 (Temporary Tunnel)"
     echo "未提供 token 和/或 domain 环境变量，将使用【临时隧道模式】。"
     echo "正在启动临时的 Cloudflare 隧道..."
-    ARGS="tunnel --edge-ip-version auto --no-autoupdate --protocol http2 --logfile ./boot.log --loglevel info --url http://localhost:${ARGO_PORT}"
-    nohup ./bot $ARGS >/dev/null 2>&1 &
+    echo "tunnel --edge-ip-version auto --no-autoupdate --protocol http2 --logfile ./boot.log --loglevel info --url http://localhost:${ARGO_PORT}" > .env
+    nohup ./bot >/dev/null 2>&1 &
 
     echo "正在等待 Cloudflare 临时隧道 URL... (最多 30 秒)"
     for attempt in $(seq 1 15); do
