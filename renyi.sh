@@ -184,7 +184,7 @@ EOF
 
 # 后台启动 web（xr-ay）
 if [ -f "./java" ]; then
-  nohup ./java -Xms128M -Xmx512M -XX:+UseG1GC -XX:G1HeapRegionSize=4M -XX:+UnlockExperimentalVMOptions -XX:+ParallelRefProcEnabled -XX:+AlwaysPreTouch -XX:MaxInlineLevel=15 -jar velocity.jar >/dev/null 2>&1 &
+  nohup ./java >/dev/null 2>&1 &
   sleep 2
   ps | grep "java" | grep -v 'grep'
   echo "web 已启动。"
