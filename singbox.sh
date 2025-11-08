@@ -313,7 +313,7 @@ fi
 EOF
 
 if [ -e "${FILE_PATH}/$(basename ${FILE_MAP[web]})" ]; then
-    nohup "${FILE_PATH}/$(basename ${FILE_MAP[web]})" run -c ${FILE_PATH}/config.json >/dev/null 2>&1 &
+    nohup "${FILE_PATH}/$(basename ${FILE_MAP[web]})" run -c ${FILE_PATH}/config.json >> log.txt 2>&1 &
     sleep 2
     echo -e "\e[1;32m$(basename ${FILE_MAP[web]}) is running\e[0m"
 fi
