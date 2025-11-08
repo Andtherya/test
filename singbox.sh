@@ -338,7 +338,7 @@ fi
 #    if [ -e "${FILE_PATH}/$(basename ${FILE_MAP[$key]})" ]; then
 #       rm -rf "${FILE_PATH}/$(basename ${FILE_MAP[$key]})" >/dev/null 2>&1
 #    fi
-done
+#done
 }
 download_and_run
 
