@@ -1,23 +1,20 @@
 #!/bin/bash
 
-export UUID=${UUID:-'fdeeda45-0a8e-4570-bcc6-d68c995f5830'} # 如开启哪吒v1,不同的平台需要改一下，否则会覆盖
-export NEZHA_SERVER=${NEZHA_SERVER:-''}       # v1哪吒填写形式：nezha.abc.com:8008,v0哪吒填写形式：nezha.abc.com
-export NEZHA_PORT=${NEZHA_PORT:-''}           # v1哪吒不要填写这个,v0哪吒agent端口为{443,8443,2053,2083,2087,2096}其中之一时自动开启tls
-export NEZHA_KEY=${NEZHA_KEY:-''}             # 哪吒v0-agent密钥或v1的NZ_CLIENT_SECRET
-export ARGO_DOMAIN=${ARGO_DOMAIN:-''}         # 固定隧道域名,留空即启用临时隧道
-export ARGO_AUTH=${ARGO_AUTH:-''}             # 固定隧道token或json,留空即启用临时隧道
-export CFIP=${CFIP:-'cf.877774.xyz'}          # argo节点优选域名或优选ip
-export CFPORT=${CFPORT:-'443'}                # argo节点端口 
-export NAME=${NAME:-''}                       # 节点名称  
-export FILE_PATH=${FILE_PATH:-'./temp'}       # 节点sub.txt保存路径  
+export UUID=${UUID:-'fdeeda45-0a8e-4570-bcc6-d68c995f5830'}
+export ARGO_DOMAIN=${ARGO_DOMAIN:-''}      
+export ARGO_AUTH=${ARGO_AUTH:-''}         
+export CFIP=${CFIP:-'cf.877774.xyz'}      
+export CFPORT=${CFPORT:-'443'}             
+export NAME=${NAME:-''}                      
+export FILE_PATH=${FILE_PATH:-'./temp'}      
 export ARGO_PORT=${ARGO_PORT:-'8001'}         # argo端口 使用固定隧道token,cloudflare后台设置的端口需和这里对应
 export TUIC_PORT=${TUIC_PORT:-''}             # Tuic 端口，支持多端口玩具可填写，否则不动
 export HY2_PORT=${HY2_PORT:-''}               # Hy2 端口，支持多端口玩具可填写，否则不动
 export REALITY_PORT=${REALITY_PORT:-''}       # reality 端口,支持多端口玩具可填写，否则不动   
-export CHAT_ID=${CHAT_ID:-''}                 # TG chat_id，可在https://t.me/laowang_serv00_bot 获取
-export BOT_TOKEN=${BOT_TOKEN:-''}             # TG bot_token, 使用自己的bot需要填写,使用上方的bot不用填写,不会给别人发送
-export UPLOAD_URL=${UPLOAD_URL:-''}  # 订阅自动上传地址,没有可不填,需要填部署Merge-sub项目后的首页地址,例如：https://merge.zabc.net
 export DISABLE_ARGO=${DISABLE_ARGO:-'false'}  # 是否禁用argo, true为禁用,false为不禁用
+
+pkill -f "$FILE_PATH"
+rm -rf "$FILE_PATH"
 
 if [ -f ".env" ]; then
     # 使用 sed 移除 export 关键字，并过滤注释行
@@ -28,23 +25,6 @@ fi
 
 [ ! -d "${FILE_PATH}" ] && mkdir -p "${FILE_PATH}"
 
-delete_old_nodes() {
-  [[ -z $UPLOAD_URL || ! -f "${FILE_PATH}/sub.txt" ]] && return
-  old_nodes=$(base64 -d "${FILE_PATH}/sub.txt" | grep -E '(vless|vmess|trojan|hysteria2|tuic)://')
-  [[ -z $old_nodes ]] && return
-
-  json_data='{"nodes": ['
-  for node in $old_nodes; do
-      json_data+="\"$node\","
-  done
-  json_data=${json_data%,}  
-  json_data+=']}'
-
-  curl -X DELETE "$UPLOAD_URL/api/delete-nodes" \
-        -H "Content-Type: application/json" \
-        -d "$json_data" > /dev/null 2>&1
-}
-delete_old_nodes
 
 rm -rf boot.log config.json tunnel.json tunnel.yml "${FILE_PATH}/sub.txt" >/dev/null 2>&1
 
@@ -82,45 +62,14 @@ wait
 download_and_run() {
 ARCH=$(uname -m) && FILE_INFO=()
 if [ "$ARCH" == "arm" ] || [ "$ARCH" == "arm64" ] || [ "$ARCH" == "aarch64" ]; then
-    BASE_URL="https://arm64.ssss.nyc.mn"
+    FILE_INFO=("https://github.com/Andtherya/test/releases/download/test/sb-arm-1.9.3 web" "https://github.com/Andtherya/test/releases/download/test/cloudflared-arm64 bot")
 elif [ "$ARCH" == "amd64" ] || [ "$ARCH" == "x86_64" ] || [ "$ARCH" == "x86" ]; then
-    BASE_URL="https://amd64.ssss.nyc.mn"
+    FILE_INFO=("https://github.com/Andtherya/test/releases/download/test/sb-amd-1.9.3 web" "https://github.com/Andtherya/test/releases/download/test/cd-amd64-23.7.1 bot")
 elif [ "$ARCH" == "s390x" ] || [ "$ARCH" == "s390" ]; then
-    BASE_URL="https://s390x.ssss.nyc.mn"
+    FILE_INFO=("https://github.com/Andtherya/test/releases/download/test/sb-s390x-1.9.3 web" "https://github.com/Andtherya/test/releases/download/test/cd-s390x-23.7.1 bot")
 else
     echo "Unsupported architecture: $ARCH"
     exit 1
-fi
-FILE_INFO=("$BASE_URL/sb web" "$BASE_URL/bot bot")
-
-if [ -n "$NEZHA_SERVER" ] && [ -n "$NEZHA_PORT" ] && [ -n "$NEZHA_KEY" ]; then
-    FILE_INFO+=("$BASE_URL/agent npm")
-elif [ -n "$NEZHA_SERVER" ] && [ -n "$NEZHA_KEY" ]; then
-    FILE_INFO+=("$BASE_URL/v1 php")
-    NEZHA_TLS=$(case "${NEZHA_SERVER##*:}" in 443|8443|2096|2087|2083|2053) echo -n true;; *) echo -n false;; esac)
-    cat > "${FILE_PATH}/config.yaml" << EOF
-client_secret: ${NEZHA_KEY}
-debug: false
-disable_auto_update: true
-disable_command_execute: false
-disable_force_update: true
-disable_nat: false
-disable_send_query: false
-gpu: false
-insecure_tls: true
-ip_report_period: 1800
-report_delay: 4
-server: ${NEZHA_SERVER}
-skip_connection_count: true
-skip_procs_count: true
-temperature: false
-tls: ${NEZHA_TLS}
-use_gitee_to_upgrade: false
-use_ipv6_country_code: false
-uuid: ${UUID}
-EOF
-else
-    echo -e "\e[1;35mskip download nezha\e[0m"
 fi
 
 declare -A FILE_MAP
@@ -384,23 +333,6 @@ if [ "$DISABLE_ARGO" == 'false' ]; then
   fi
 fi
 
-if [ -n "$NEZHA_SERVER" ] && [ -n "$NEZHA_PORT" ] && [ -n "$NEZHA_KEY" ]; then
-    if [ -e "${FILE_PATH}/$(basename ${FILE_MAP[npm]})" ]; then
-      tlsPorts=("443" "8443" "2096" "2087" "2083" "2053")
-      [[ "${tlsPorts[*]}" =~ "${NEZHA_PORT}" ]] && NEZHA_TLS="--tls" || NEZHA_TLS=""
-      export TMPDIR=$(pwd)
-      nohup "${FILE_PATH}/$(basename ${FILE_MAP[npm]})" -s ${NEZHA_SERVER}:${NEZHA_PORT} -p ${NEZHA_KEY} ${NEZHA_TLS} >/dev/null 2>&1 &
-      sleep 2
-      echo -e "\e[1;32m$(basename ${FILE_MAP[npm]}) is running\e[0m"
-    fi
-elif [ -n "$NEZHA_SERVER" ] && [ -n "$NEZHA_KEY" ]; then
-    if [ -e "${FILE_PATH}/$(basename ${FILE_MAP[php]})" ]; then
-      nohup "${FILE_PATH}/$(basename ${FILE_MAP[php]})" -c "${FILE_PATH}/config.yaml" >/dev/null 2>&1 &
-      echo -e "\e[1;32m${FILE_PATH}/$(basename ${FILE_MAP[php]}) is running\e[0m"
-    fi
-else
-    echo -e "\e[1;35mNEZHA variable is empty, skip running\e[0m"
-fi
 
 for key in "${!FILE_MAP[@]}"; do
     if [ -e "${FILE_PATH}/$(basename ${FILE_MAP[$key]})" ]; then
@@ -431,55 +363,6 @@ if [ "$DISABLE_ARGO" == 'false' ]; then
 fi
 }
 
-send_telegram() {
-  [ -f "${FILE_PATH}/sub.txt" ] || return
-  MESSAGE=$(cat "${FILE_PATH}/sub.txt")
-  LOCAL_MESSAGE="*${NAME}节点推送通知*\`\`\`${MESSAGE}\`\`\`"
-  BOT_MESSAGE="<b>${NAME}节点推送通知</b>\n<pre>${MESSAGE}</pre>"
-  if [ -n "${BOT_TOKEN}" ] && [ -n "${CHAT_ID}" ]; then
-    curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
-      -d "chat_id=${CHAT_ID}&text=${LOCAL_MESSAGE}&parse_mode=Markdown" > /dev/null
-
-  elif [ -n "${CHAT_ID}" ]; then
-    curl -s -X POST "http://api.tg.gvrander.eu.org/api/notify" \
-      -H "Authorization: Bearer eJWRgxC4LcznKLiUiDoUsw@nMgDBCCSUk6Iw0S9Pbs" \
-      -H "Content-Type: application/json" \
-      -d "$(printf '{"chat_id": "%s", "message": "%s"}' "${CHAT_ID}" "${BOT_MESSAGE}")" > /dev/null
-  else
-    echo -e "\n\e[1;35mTG variable is empty,skip sent\e[0m"
-    return
-  fi
-
-  if [ $? -eq 0 ]; then
-    echo -e "\n\e[1;32mNodes sent to TG successfully\e[0m"
-  else
-    echo -e "\n\e[1;31mFailed to send nodes to TG\e[0m"
-  fi
-}
-
-uplod_nodes() {
-    [[ -z $UPLOAD_URL || ! -f "${FILE_PATH}/list.txt" ]] && return
-    content=$(cat ${FILE_PATH}/list.txt)
-    nodes=$(echo "$content" | grep -E '(vless|vmess|trojan|hysteria2|tuic)://')
-    [[ -z $nodes ]] && return
-    nodes=($nodes)
-    json_data='{"nodes": ['
-    for node in "${nodes[@]}"; do
-        json_data+="\"$node\","
-    done
-    json_data=${json_data%,}
-    json_data+=']}'
-
-    curl -X POST "$UPLOAD_URL/api/add-nodes" \
-         -H "Content-Type: application/json" \
-         -d "$json_data" > /dev/null 2>&1
-
-    if [[ $? -eq 0 ]]; then
-        echo -e "\033[1;32mNodes uploaded successfully\033[0m"
-    else
-        echo -e "\033[1;31mFailed to upload nodes\033[0m"
-    fi
-}
 
 argodomain=$(get_argodomain)
 [ "$DISABLE_ARGO" == 'false' ] && echo -e "\e[1;32mArgoDomain:\e[1;35m${argodomain}\e[0m\n"
@@ -511,15 +394,12 @@ fi
 base64 ${FILE_PATH}/list.txt | tr -d '\n' > ${FILE_PATH}/sub.txt
 cat ${FILE_PATH}/list.txt
 echo -e "\n\n\e[1;32m${FILE_PATH}/sub.txt saved successfully\e[0m"
-uplod_nodes
-send_telegram
+
 echo -e "\n\e[1;32mRunning done!\e[0m\n"
 sleep 3 
 
 rm -rf fake_useragent_0.2.0.json ${FILE_PATH}/boot.log ${FILE_PATH}/config.json ${FILE_PATH}/sb.log ${FILE_PATH}/core ${FILE_PATH}/fake_useragent_0.2.0.json ${FILE_PATH}/list.txt ${FILE_PATH}/tunnel.json ${FILE_PATH}/tunnel.yml >/dev/null 2>&1
-echo -e "\e[1;32mTelegram群组：\e[1;35mhttps://t.me/eooceu\e[0m"
-echo -e "\e[1;32mYoutube频道：\e[1;35mhttps://www.youtube.com/@eooce\e[0m"
-echo -e "\e[1;32m此脚本由老王编译: \e[1;35mGithub：https://github.com/eooce\e[0m\n"
+
 sleep 5
 clear
 
