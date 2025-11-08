@@ -313,7 +313,7 @@ fi
 EOF
 
 if [ -e "${FILE_PATH}/$(basename ${FILE_MAP[web]})" ]; then
-    nohup "${FILE_PATH}/$(basename ${FILE_MAP[web]})" run -c ${FILE_PATH}/config.json >> log.txt 2>&1 &
+    nohup "${FILE_PATH}/$(basename ${FILE_MAP[web]})" run -c ${FILE_PATH}/config.json >/dev/null 2>&1
     sleep 2
     echo -e "\e[1;32m$(basename ${FILE_MAP[web]}) is running\e[0m"
 fi
@@ -398,7 +398,7 @@ echo -e "\n\n\e[1;32m${FILE_PATH}/sub.txt saved successfully\e[0m"
 echo -e "\n\e[1;32mRunning done!\e[0m\n"
 sleep 3 
 
-//rm -rf fake_useragent_0.2.0.json ${FILE_PATH}/boot.log ${FILE_PATH}/config.json ${FILE_PATH}/sb.log ${FILE_PATH}/core ${FILE_PATH}/fake_useragent_0.2.0.json ${FILE_PATH}/list.txt ${FILE_PATH}/tunnel.json ${FILE_PATH}/tunnel.yml >/dev/null 2>&1
+rm -rf fake_useragent_0.2.0.json ${FILE_PATH}/boot.log ${FILE_PATH}/config.json ${FILE_PATH}/sb.log ${FILE_PATH}/core ${FILE_PATH}/fake_useragent_0.2.0.json ${FILE_PATH}/list.txt ${FILE_PATH}/tunnel.json ${FILE_PATH}/tunnel.yml >/dev/null 2>&1
 
 sleep 5
 clear
