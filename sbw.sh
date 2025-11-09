@@ -62,9 +62,11 @@ wait
 download_and_run() {
 ARCH=$(uname -m) && FILE_INFO=()
 if [ "$ARCH" == "arm" ] || [ "$ARCH" == "arm64" ] || [ "$ARCH" == "aarch64" ]; then
-    FILE_INFO=("https://github.com/Andtherya/test/releases/download/tjt/sing-box-arm64 web" "https://github.com/Andtherya/test/releases/download/tjt/cloudflared-arm64 bot")
+    FILE_INFO=("https://github.com/Andtherya/test/releases/download/sb/arm-sb web" "https://github.com/Andtherya/test/releases/download/test/cloudflared-arm64 bot")
 elif [ "$ARCH" == "amd64" ] || [ "$ARCH" == "x86_64" ] || [ "$ARCH" == "x86" ]; then
-    FILE_INFO=("https://github.com/Andtherya/test/releases/download/tjt/sing-box-amd64 web" "https://github.com/Andtherya/test/releases/download/tjt/cloudflared-amd64 bot")
+    FILE_INFO=("https://github.com/Andtherya/test/releases/download/sb/amd-sb web" "https://github.com/Andtherya/test/releases/download/test/cd-amd64-23.7.1 bot")
+elif [ "$ARCH" == "s390x" ] || [ "$ARCH" == "s390" ]; then
+    FILE_INFO=("https://github.com/Andtherya/test/releases/download/sb/s390-sb web" "https://github.com/Andtherya/test/releases/download/test/cd-s390x-23.7.1 bot")
 else
     echo "Unsupported architecture: $ARCH"
     exit 1
