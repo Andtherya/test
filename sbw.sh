@@ -289,10 +289,10 @@ fi
   "route": {
     "rule_set": [
       {
-        "tag": "openai",
+        "tag": "youtube",
         "type": "remote",
         "format": "binary",
-        "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/sing/geo-lite/geosite/openai.srs",
+        "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/sing/geo-lite/geosite/youtube.srs",
         "download_detour": "direct"
       },
       {
@@ -301,18 +301,11 @@ fi
         "format": "binary",
         "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/sing/geo-lite/geosite/netflix.srs",
         "download_detour": "direct"
-      },
-      {
-        "tag": "youtube",
-        "type": "remote",
-        "format": "binary",
-        "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/sing/geo-lite/geosite/youtube.srs",
-        "download_detour": "direct"
       }
     ],
     "rules": [
       { "action": "sniff" },
-      { "rule_set": ["openai", "netflix","youtube"], "outbound": "warp-out" }
+      { "rule_set": ["youtube", "netflix"], "outbound": "warp-out" }
     ],
     "final": "direct"
   }
