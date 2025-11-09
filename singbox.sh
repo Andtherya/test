@@ -311,7 +311,7 @@ fi
   }
 }
 EOF
-
+sleep 2
 if [ -e "${FILE_PATH}/$(basename ${FILE_MAP[web]})" ]; then
     nohup "${FILE_PATH}/$(basename ${FILE_MAP[web]})" run -c ${FILE_PATH}/config.json >/dev/null 2>&1 &
     sleep 2
