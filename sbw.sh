@@ -284,9 +284,38 @@ fi
     }
   ],
   "outbounds": [
-    { "type": "direct", "tag": "direct" },
-    {"tag": "warp-out"}
-  ]
+    { "type": "direct", "tag": "direct" }
+  ],
+  "route": {
+    "rule_set": [
+      {
+        "tag": "openai",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/sing/geo-lite/geosite/openai.srs",
+        "download_detour": "direct"
+      },
+      {
+        "tag": "netflix",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/sing/geo-lite/geosite/netflix.srs",
+        "download_detour": "direct"
+      },
+      {
+        "tag": "youtube",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/sing/geo-lite/geosite/youtube.srs",
+        "download_detour": "direct"
+      }
+    ],
+    "rules": [
+      { "action": "sniff" },
+      { "rule_set": ["openai", "netflix","youtube"], "outbound": "warp-out" }
+    ],
+    "final": "direct"
+  }
 }
 EOF
 
@@ -376,9 +405,10 @@ echo -e "\n\n\e[1;32m${FILE_PATH}/sub.txt saved successfully\e[0m"
 echo -e "\n\e[1;32mRunning done!\e[0m\n"
 sleep 3 
 
-#rm -rf fake_useragent_0.2.0.json ${FILE_PATH}/boot.log ${FILE_PATH}/config.json ${FILE_PATH}/sb.log ${FILE_PATH}/core ${FILE_PATH}/fake_useragent_0.2.0.json ${FILE_PATH}/list.txt ${FILE_PATH}/tunnel.json ${FILE_PATH}/tunnel.yml >/dev/null 2>&1
+rm -rf fake_useragent_0.2.0.json ${FILE_PATH}/boot.log ${FILE_PATH}/config.json ${FILE_PATH}/sb.log ${FILE_PATH}/core ${FILE_PATH}/fake_useragent_0.2.0.json ${FILE_PATH}/list.txt ${FILE_PATH}/tunnel.json ${FILE_PATH}/tunnel.yml >/dev/null 2>&1
 
 sleep 5
 clear
 
 
+# tail -f /dev/null  # 若只单独运行此文件并希望保持运行,去掉此行开头的#号
