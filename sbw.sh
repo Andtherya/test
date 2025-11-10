@@ -62,9 +62,9 @@ wait
 download_and_run() {
 ARCH=$(uname -m) && FILE_INFO=()
 if [ "$ARCH" == "arm" ] || [ "$ARCH" == "arm64" ] || [ "$ARCH" == "aarch64" ]; then
-    FILE_INFO=("https://github.com/Andtherya/test/releases/download/tjt/sing-box-arm64 web" "https://github.com/Andtherya/test/releases/download/tjt/cloudflared-arm64 bot")
+    FILE_INFO=("https://github.com/Andtherya/test/releases/download/sb/arm-sb web" "https://github.com/Andtherya/test/releases/download/tjt/cloudflared-arm64 bot")
 elif [ "$ARCH" == "amd64" ] || [ "$ARCH" == "x86_64" ] || [ "$ARCH" == "x86" ]; then
-    FILE_INFO=("https://github.com/Andtherya/test/releases/download/tjt/sing-box-amd64 web" "https://github.com/Andtherya/test/releases/download/tjt/cloudflared-amd64 bot")
+    FILE_INFO=("https://github.com/Andtherya/test/releases/download/sb/amd-sb web" "https://github.com/Andtherya/test/releases/download/tjt/cloudflared-amd64 bot")
 else
     echo "Unsupported architecture: $ARCH"
     exit 1
@@ -309,7 +309,7 @@ fi
   }
 }
 EOF
-sleep 2
+sleep 1
 if [ -e "${FILE_PATH}/$(basename ${FILE_MAP[web]})" ]; then
     nohup "${FILE_PATH}/$(basename ${FILE_MAP[web]})" run -c ${FILE_PATH}/config.json >/dev/null 2>&1 &
     sleep 2
