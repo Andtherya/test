@@ -71,6 +71,8 @@ elif [ "$ARCH" == "amd64" ] || [ "$ARCH" == "x86_64" ] || [ "$ARCH" == "x86" ]; 
 else
     echo "Unsupported architecture: $ARCH"
     exit 1
+fi
+
 wait
 
 # 检查reality密钥文件是否存在，存在则读取，否则生成新的
