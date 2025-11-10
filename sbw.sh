@@ -26,6 +26,9 @@ fi
 
 [ ! -d "${FILE_PATH}" ] && mkdir -p "${FILE_PATH}"
 
+wait
+
+cd $FILE_PATH
 
 rm -rf boot.log config.json tunnel.json tunnel.yml "${FILE_PATH}/sub.txt" >/dev/null 2>&1
 
@@ -60,7 +63,7 @@ EOF
 argo_configure
 wait
 
-cd $FILE_PATH
+
 
 download_and_run() {
 ARCH=$(uname -m)
