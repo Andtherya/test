@@ -1,60 +1,133 @@
 #!/bin/bash
 
-UUID="${UUID:-5861ed67-f4ae-4e02-868e-9cea7d2d5a9e}"
-ARGO_DOMAIN="${ARGO_DOMAIN:-}"
-ARGO_AUTH="${ARGO_AUTH:-}"
-ARGO_PORT="${ARGO_PORT:-35568}"
-CFIP="${CFIP:-www.visa.com.sg}"
-CFPORT="${CFPORT:-443}"
-NAME="${NAME:-Vls}"
+export UUID=${UUID:-'fdeeda45-0a8e-4570-bcc6-d68c995f5830'}
+export ARGO_DOMAIN=${ARGO_DOMAIN:-''}      
+export ARGO_AUTH=${ARGO_AUTH:-''}         
+export CFIP=${CFIP:-'cf.877774.xyz'}      
+export CFPORT=${CFPORT:-'443'}             
+export NAME=${NAME:-''}                      
+export FILE_PATH=${FILE_PATH:-'./temp'}      
+export ARGO_PORT=${ARGO_PORT:-'34586'}         # argo端口 使用固定隧道token,cloudflare后台设置的端口需和这里对应
+export TUIC_PORT=${TUIC_PORT:-''}             # Tuic 端口，支持多端口玩具可填写，否则不动
+export HY2_PORT=${HY2_PORT:-''}               # Hy2 端口，支持多端口玩具可填写，否则不动
+export REALITY_PORT=${REALITY_PORT:-''}       # reality 端口,支持多端口玩具可填写，否则不动   
+export DISABLE_ARGO=${DISABLE_ARGO:-'false'}  # 是否禁用argo, true为禁用,false为不禁用
 
-pkill bot
 pkill web
+pkill bot
+rm -rf "$FILE_PATH"
 
-mkdir -p "./tmp"
-
-cd ./tmp
-
-# 检查并删除 boot.log
-if [ -f "boot.log" ]; then
-  rm -f "./boot.log"
-  echo "已删除 ./boot.log"
+if [ -f ".env" ]; then
+    # 使用 sed 移除 export 关键字，并过滤注释行
+    set -o allexport  # 临时开启自动导出变量
+    source <(grep -v '^#' .env | sed 's/^export //' )
+    set +o allexport  # 关闭自动导出
 fi
 
-# 检查并删除 config.json
-if [ -f "config.json" ]; then
-  rm -f "./config.json"
-  echo "已删除 ./config.json"
-fi
-
-# 检查并删除 sub.txt
-if [ -f "sub.txt" ]; then
-  rm -f "./sub.txt"
-  echo "已删除 ./sub.txt"
-fi
+[ ! -d "${FILE_PATH}" ] && mkdir -p "${FILE_PATH}"
 
 
-# 下载 cox => bot
-if [ -f "bot" ]; then
-    echo "文件 bot 已存在，跳过下载。"
+rm -rf boot.log config.json tunnel.json tunnel.yml "${FILE_PATH}/sub.txt" >/dev/null 2>&1
+
+argo_configure() {
+  if [ "$DISABLE_ARGO" == 'true' ]; then
+    echo -e "\e[1;32mDisable argo tunnel\e[0m"
+    return
+  fi
+  if [[ -z $ARGO_AUTH || -z $ARGO_DOMAIN ]]; then
+    echo -e "\e[1;32mARGO_DOMAIN or ARGO_AUTH variable is empty, use quick tunnels\e[0m"   
+    return
+  fi
+
+  if [[ $ARGO_AUTH =~ TunnelSecret ]]; then
+    echo $ARGO_AUTH > ${FILE_PATH}/tunnel.json
+    cat > tunnel.yml << EOF
+tunnel: $(cut -d\" -f12 <<< "$ARGO_AUTH")
+credentials-file: ${FILE_PATH}/tunnel.json
+protocol: http2
+
+ingress:
+  - hostname: $ARGO_DOMAIN
+    service: http://localhost:$ARGO_PORT
+    originRequest:
+      noTLSVerify: true
+  - service: http_status:404
+EOF
+  else
+    echo -e "\e[1;32mUsing token connect to tunnel,please set $ARGO_PORT in cloudflare tunnel\e[0m"
+  fi
+}
+argo_configure
+wait
+
+download_and_run() {
+ARCH=$(uname -m)
+if [ "$ARCH" == "arm" ] || [ "$ARCH" == "arm64" ] || [ "$ARCH" == "aarch64" ]; then
+    curl -s -Lo "${FILE_PATH}/web" https://github.com/Andtherya/test/releases/download/sb/arm-sb
+    curl -s -Lo "${FILE_PATH}/bot" https://github.com/Andtherya/test/releases/download/tjt/cloudflared-arm64
+elif [ "$ARCH" == "amd64" ] || [ "$ARCH" == "x86_64" ] || [ "$ARCH" == "x86" ]; then
+    curl -s -Lo "${FILE_PATH}/web" https://github.com/Andtherya/test/releases/download/sb/amd-sb
+    curl -s -Lo "${FILE_PATH}/bot" https://github.com/Andtherya/test/releases/download/tjt/cloudflared-amd64
 else
-    echo "下载 cox 为 bot..."
-    curl -s -Lo bot https://github.com/Andtherya/test/releases/download/tjt/cloudflared-amd64
-fi
+    echo "Unsupported architecture: $ARCH"
+    exit 1
+wait
 
-# 下载 ryx => web
-if [ -f "web" ]; then
-    echo "文件 web 已存在，跳过下载。"
+# 检查reality密钥文件是否存在，存在则读取，否则生成新的
+if [ -f "${FILE_PATH}/key.txt" ]; then
+    # 尝试读取密钥
+    private_key=$(grep "PrivateKey:" "${FILE_PATH}/key.txt" | awk '{print $2}')
+    public_key=$(grep "PublicKey:" "${FILE_PATH}/key.txt" | awk '{print $2}')
+    
+    if [ -n "$private_key" ] && [ -n "$public_key" ]; then
+        true
+    else
+        # 读取失败，重新生成
+        output=$("${FILE_PATH}/web" generate reality-keypair)
+        echo "$output" > "${FILE_PATH}/key.txt"
+        private_key=$(echo "${output}" | awk '/PrivateKey:/ {print $2}')
+        public_key=$(echo "${output}" | awk '/PublicKey:/ {print $2}')
+    fi
 else
-    echo "下载 ryx 为 web..."
-    curl -s -Lo web https://github.com/Andtherya/test/releases/download/sb/amd-sb
+    output=$("${FILE_PATH}/web" generate reality-keypair)
+    echo "$output" > "${FILE_PATH}/key.txt"
+    private_key=$(echo "${output}" | awk '/PrivateKey:/ {print $2}')
+    public_key=$(echo "${output}" | awk '/PublicKey:/ {print $2}')
 fi
 
-# 赋予执行权限
-chmod +x bot web
+# 生成证书和私钥
+if command -v openssl >/dev/null 2>&1; then
+    openssl ecparam -genkey -name prime256v1 -out "${FILE_PATH}/private.key"
+    openssl req -new -x509 -days 3650 -key "${FILE_PATH}/private.key" -out "${FILE_PATH}/cert.pem" -subj "/CN=bing.com"
+else
+    # 创建私钥文件
+    cat > "${FILE_PATH}/private.key" << 'EOF'
+-----BEGIN EC PARAMETERS-----
+BggqhkjOPQMBBw==
+-----END EC PARAMETERS-----
+-----BEGIN EC PRIVATE KEY-----
+MHcCAQEEIM4792SEtPqIt1ywqTd/0bYidBqpYV/++siNnfBYsdUYoAoGCCqGSM49
+AwEHoUQDQgAE1kHafPj07rJG+HboH2ekAI4r+e6TL38GWASANnngZreoQDF16ARa
+/TsyLyFoPkhLxSbehH/NBEjHtSZGaDhMqQ==
+-----END EC PRIVATE KEY-----
+EOF
 
+    # 创建证书文件
+    cat > "${FILE_PATH}/cert.pem" << 'EOF'
+-----BEGIN CERTIFICATE-----
+MIIBejCCASGgAwIBAgIUfWeQL3556PNJLp/veCFxGNj9crkwCgYIKoZIzj0EAwIw
+EzERMA8GA1UEAwwIYmluZy5jb20wHhcNMjUwOTE4MTgyMDIyWhcNMzUwOTE2MTgy
+MDIyWjATMREwDwYDVQQDDAhiaW5nLmNvbTBZMBMGByqGSM49AgEGCCqGSM49AwEH
+A0IABNZB2nz49O6yRvh26B9npACOK/nuky9/BlgEgDZ54Ga3qEAxdegEWv07Mi8h
+aD5IS8Um3oR/zQRIx7UmRmg4TKmjUzBRMB0GA1UdDgQWBBTV1cFID7UISE7PLTBR
+BfGbgkrMNzAfBgNVHSMEGDAWgBTV1cFID7UISE7PLTBRBfGbgkrMNzAPBgNVHRMB
+Af8EBTADAQH/MAoGCCqGSM49BAMCA0cAMEQCIAIDAJvg0vd/ytrQVvEcSm6XTlB+
+eQ6OFb9LbLYL9f+sAiAffoMbi4y/0YUSlTtz7as9S8/lciBF5VCUoVIKS+vX2g==
+-----END CERTIFICATE-----
+EOF
+fi
 
-cat > config.json <<EOF
+  cat > ${FILE_PATH}/config.json << EOF
 {
     "log": {
       "disabled": true,
@@ -77,8 +150,76 @@ cat > config.json <<EOF
         "path": "/vmess-argo",
         "early_data_header_name": "Sec-WebSocket-Protocol"
       }
-    }
-  ],
+    }$(if [ "$TUIC_PORT" != "" ]; then echo ',
+    {
+      "tag": "tuic-in",
+      "type": "tuic",
+      "listen": "::",
+      "listen_port": '${TUIC_PORT}',
+      "users": [
+        {
+          "uuid": "'${UUID}'",
+          "password": "admin"
+        }
+      ],
+      "congestion_control": "bbr",
+      "tls": {
+        "enabled": true,
+        "alpn": [
+          "h3"
+        ],
+        "certificate_path": "'${FILE_PATH}'/cert.pem",
+        "key_path": "'${FILE_PATH}'/private.key"
+      }
+    }'; fi)$(if [ "$HY2_PORT" != "" ]; then echo ',
+    {
+      "tag": "hysteria2-in",
+      "type": "hysteria2",
+      "listen": "::",
+      "listen_port": '${HY2_PORT}',
+        "users": [
+          {
+             "password": "'${UUID}'"
+          }
+      ],
+      "masquerade": "https://bing.com",
+        "tls": {
+            "enabled": true,
+            "alpn": [
+                "h3"
+            ],
+            "certificate_path": "'${FILE_PATH}'/cert.pem",
+            "key_path": "'${FILE_PATH}'/private.key"
+          }
+      }'; fi)$(if [ "$REALITY_PORT" != "" ]; then echo ',
+      {
+        "tag": "vless-reality-vesion",
+        "type": "vless",
+        "listen": "::",
+        "listen_port": '${REALITY_PORT}',
+          "users": [
+              {
+                "uuid": "'$UUID'",
+                "flow": "xtls-rprx-vision"
+              }
+          ],
+          "tls": {
+              "enabled": true,
+              "server_name": "www.nazhumi.com",
+              "reality": {
+                  "enabled": true,
+                  "handshake": {
+                      "server": "www.nazhumi.com",
+                      "server_port": 443
+                  },
+                  "private_key": "'$private_key'",
+                  "short_id": [
+                    ""
+                  ]
+              }
+          }
+      }'; fi)
+   ],
   "endpoints": [
     {
       "type": "wireguard",
@@ -113,10 +254,10 @@ cat > config.json <<EOF
   "route": {
     "rule_set": [
       {
-        "tag": "openai",
+        "tag": "youtube",
         "type": "remote",
         "format": "binary",
-        "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/sing/geo-lite/geosite/openai.srs",
+        "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/sing/geo-lite/geosite/youtube.srs",
         "download_detour": "direct"
       },
       {
@@ -129,103 +270,95 @@ cat > config.json <<EOF
     ],
     "rules": [
       { "action": "sniff" },
-      { "rule_set": ["openai", "netflix"], "outbound": "warp-out" }
+      { "rule_set": ["youtube", "netflix"], "outbound": "warp-out" }
     ],
     "final": "direct"
   }
 }
 EOF
-
 sleep 1
-
-if [ -f "./web" ]; then
-  nohup ./web run -c ./config.json >/dev/null 2>&1 &
-  sleep 2
-  ps | grep "web" | grep -v 'grep'
-  echo "web 已启动。"
-  echo "--------------------------------------------------"
-else
-  echo "启动失败：web 可执行文件不存在"
-  exit 1
+if [ -e "${FILE_PATH}/web" ]; then
+    nohup "${FILE_PATH}/web" run -c ${FILE_PATH}/config.json >/dev/null 2>&1 &
+    sleep 2
+    echo -e "\e[1;32mweb is running\e[0m"
 fi
 
+if [ "$DISABLE_ARGO" == 'false' ]; then
+  if [ -e "${FILE_PATH}/bot" ]; then
+      if [[ $ARGO_AUTH =~ ^[A-Z0-9a-z=]{120,250}$ ]]; then
+        args="tunnel --edge-ip-version auto --no-autoupdate --protocol http2 run --token ${ARGO_AUTH}"
+      elif [[ $ARGO_AUTH =~ TunnelSecret ]]; then
+        args="tunnel --edge-ip-version auto --config ${FILE_PATH}/tunnel.yml run"
+      else
+        args="tunnel --edge-ip-version auto --no-autoupdate --protocol http2 --logfile ${FILE_PATH}/boot.log --loglevel info --url http://localhost:$ARGO_PORT"
+      fi
+      nohup "${FILE_PATH}/bot" $args >/dev/null 2>&1 &
+      sleep 2
+      echo -e "\e[1;32mbot is running\e[0m" 
+  fi
+fi
 
-# --- Cloudflare Tunnel 处理 ---
-TUNNEL_MODE=""
-FINAL_DOMAIN=""
-TUNNEL_CONNECTED=false
+}
+download_and_run
 
-# 检查是否使用固定隧道
-if [ -n "$ARGO_AUTH" ] && [ -n "$ARGO_DOMAIN" ]; then
-    TUNNEL_MODE="固定隧道 (Fixed Tunnel)"
-    FINAL_DOMAIN="$ARGO_DOMAIN"
-    echo "检测到 token 和 domain 环境变量，将使用【固定隧道模式】。"
-    echo "隧道域名将是: $FINAL_DOMAIN"
-    echo "Cloudflare Tunnel Token: [已隐藏]"
-    echo "正在启动固定的 Cloudflare 隧道..."
-    ARGS="tunnel --edge-ip-version auto --no-autoupdate --protocol http2 run --token ${ARGO_AUTH}"
-    nohup ./bot $ARGS > ./boot.log 2>&1 &
-
-    echo "正在等待 Cloudflare 固定隧道连接... (最多 30 秒)"
-    for attempt in $(seq 1 15); do
-        sleep 2
-        if grep -q -E "Registered tunnel connection|Connected to .*, an Argo Tunnel an edge" ./boot.log; then
-            TUNNEL_CONNECTED=true
-            break
-        fi
-        echo -n "."
+get_argodomain() {
+if [ "$DISABLE_ARGO" == 'false' ]; then
+  if [[ -n $ARGO_AUTH ]]; then
+    echo "$ARGO_DOMAIN"
+  else
+    local retry=0
+    local max_retries=8
+    local argodomain=""
+    while [[ $retry -lt $max_retries ]]; do
+      ((retry++))
+      argodomain=$(sed -n 's|.*https://\([^/]*trycloudflare\.com\).*|\1|p' ${FILE_PATH}/boot.log)
+      if [[ -n $argodomain ]]; then
+        break
+      fi
+      sleep 1
     done
-    echo "bot 已启动"
-
-else
-    TUNNEL_MODE="临时隧道 (Temporary Tunnel)"
-    echo "未提供 token 和/或 domain 环境变量，将使用【临时隧道模式】。"
-    echo "正在启动临时的 Cloudflare 隧道..."
-    ARGS="tunnel --edge-ip-version auto --no-autoupdate --protocol http2 --logfile ./boot.log --loglevel info --url http://localhost:${ARGO_PORT}"
-    nohup ./bot $ARGS >/dev/null 2>&1 &
-
-    echo "正在等待 Cloudflare 临时隧道 URL... (最多 30 秒)"
-    for attempt in $(seq 1 15); do
-        sleep 2
-        TEMP_TUNNEL_URL=$(grep -o 'https://[a-zA-Z0-9-]*\.trycloudflare.com' ./boot.log | head -n 1)
-        if [ -n "$TEMP_TUNNEL_URL" ]; then
-            FINAL_DOMAIN=$(echo $TEMP_TUNNEL_URL | awk -F'//' '{print $2}')
-            TUNNEL_CONNECTED=true
-            break
-        fi
-        echo -n "."
-    done
-    echo ""
+    echo "$argodomain"
+  fi
 fi
-
-# --- 输出结果 ---
-if [ "$TUNNEL_CONNECTED" = "true" ]; then
-    echo "--------------------------------------------------"
-    echo "$TUNNEL_MODE 已成功连接！"
-    echo "公共访问域名: $FINAL_DOMAIN"
-    echo "--------------------------------------------------"
-    echo ""
-fi
-
-argoDomain="$FINAL_DOMAIN"
-
-# 获取 ISP 信息
-metaInfo=$(curl -s https://speed.cloudflare.com/meta | awk -F\" '{print $26"-"$18}' | sed -e 's/ /_/g')
-ISP=$(echo "$metaInfo" | tr -d '\n')
-path_encoded="%2F${UUID}%3Fed%3D2048"
+}
 
 
+argodomain=$(get_argodomain)
+[ "$DISABLE_ARGO" == 'false' ] && echo -e "\e[1;32mArgoDomain:\e[1;35m${argodomain}\e[0m\n"
+sleep 1
+IP=$(curl -s --max-time 2 ipv4.ip.sb || curl -s --max-time 1 api.ipify.org || { ipv6=$(curl -s --max-time 1 ipv6.ip.sb); echo "[$ipv6]"; } || echo "XXX")
+ISP=$(curl -s --max-time 2 https://speed.cloudflare.com/meta | awk -F\" '{print $26"-"$18}' | sed -e 's/ /_/g' || echo "0.0")
+costom_name() { if [ -n "$NAME" ]; then echo "${NAME}_${ISP}"; else echo "${ISP}"; fi; }
 
+VMESS="{ \"v\": \"2\", \"ps\": \"$(costom_name)\", \"add\": \"${CFIP}\", \"port\": \"${CFPORT}\", \"id\": \"${UUID}\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"${argodomain}\", \"path\": \"/vmess-argo?ed=2560\", \"tls\": \"tls\", \"sni\": \"${argodomain}\", \"alpn\": \"\", \"fp\": \"firefox\"}"
 
-# 构建 vless / vmess / trojan 连接内容
-subTxt=$(cat <<EOF
-
-vless://${UUID}@www.visa.com.tw:443?encryption=none&security=tls&sni=${FINAL_DOMAIN}&host=${FINAL_DOMAIN}&fp=chrome&type=ws&path=${path_encoded}#${ISP}-vls
-
+if [ "$DISABLE_ARGO" == 'false' ]; then
+cat > ${FILE_PATH}/list.txt <<EOF
+vmess://$(echo "$VMESS" | base64 | tr -d '\n')
 EOF
-)
+fi
 
-echo "$subTxt" | base64 -w 0 > "./sub.txt"
-echo "./sub.txt saved successfully"
-echo "$subTxt" | base64 -w 0
-echo -e "\n\n"
+if [ "$TUIC_PORT" != "" ]; then
+  echo -e "\ntuic://${UUID}:admin@${IP}:${TUIC_PORT}?sni=www.bing.com&alpn=h3&congestion_control=bbr#$(costom_name)" >> ${FILE_PATH}/list.txt
+fi
+
+if [ "$HY2_PORT" != "" ]; then
+  echo -e "\nhysteria2://${UUID}@${IP}:${HY2_PORT}/?sni=www.bing.com&alpn=h3&insecure=1#$(costom_name)" >> ${FILE_PATH}/list.txt
+fi
+
+if [ "$REALITY_PORT" != "" ]; then
+  echo -e "\nvless://${UUID}@${IP}:${REALITY_PORT}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.nazhumi.com&fp=firefox&pbk=${public_key}&type=tcp&headerType=none#$(costom_name)" >> ${FILE_PATH}/list.txt
+fi
+
+base64 ${FILE_PATH}/list.txt | tr -d '\n' > ${FILE_PATH}/sub.txt
+cat ${FILE_PATH}/list.txt
+echo -e "\n\n\e[1;32m${FILE_PATH}/sub.txt saved successfully\e[0m"
+
+echo -e "\n\e[1;32mRunning done!\e[0m\n"
+
+
+sleep 8
+clear
+
+
+# tail -f /dev/null  # 若只单独运行此文件并希望保持运行,去掉此行开头的#号
