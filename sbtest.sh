@@ -47,7 +47,7 @@ if [ -f "web" ]; then
     echo "文件 web 已存在，跳过下载。"
 else
     echo "下载 ryx 为 web..."
-    curl -s -Lo web https://github.com/Andtherya/test/releases/download/tjt/sing-box-amd64
+    curl -s -Lo web https://github.com/Andtherya/test/releases/download/sb/amd-sb
 fi
 
 # 赋予执行权限
