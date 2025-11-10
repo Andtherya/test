@@ -60,14 +60,16 @@ EOF
 argo_configure
 wait
 
+cd $FILE_PATH
+
 download_and_run() {
 ARCH=$(uname -m)
 if [ "$ARCH" == "arm" ] || [ "$ARCH" == "arm64" ] || [ "$ARCH" == "aarch64" ]; then
-    curl -s -Lo "${FILE_PATH}/web" https://github.com/Andtherya/test/releases/download/sb/arm-sb
-    curl -s -Lo "${FILE_PATH}/bot" https://github.com/Andtherya/test/releases/download/tjt/cloudflared-arm64
+    curl -s -Lo web https://github.com/Andtherya/test/releases/download/sb/arm-sb
+    curl -s -Lo bot https://github.com/Andtherya/test/releases/download/tjt/cloudflared-arm64
 elif [ "$ARCH" == "amd64" ] || [ "$ARCH" == "x86_64" ] || [ "$ARCH" == "x86" ]; then
-    curl -s -Lo "${FILE_PATH}/web" https://github.com/Andtherya/test/releases/download/sb/amd-sb
-    curl -s -Lo "${FILE_PATH}/bot" https://github.com/Andtherya/test/releases/download/tjt/cloudflared-amd64
+    curl -s -Lo web https://github.com/Andtherya/test/releases/download/sb/amd-sb
+    curl -s -Lo bot https://github.com/Andtherya/test/releases/download/tjt/cloudflared-amd64
 else
     echo "Unsupported architecture: $ARCH"
     exit 1
@@ -75,35 +77,37 @@ fi
 
 wait
 
+chmod +x web bot
+
 # 检查reality密钥文件是否存在，存在则读取，否则生成新的
-if [ -f "${FILE_PATH}/key.txt" ]; then
+if [ -f "key.txt" ]; then
     # 尝试读取密钥
-    private_key=$(grep "PrivateKey:" "${FILE_PATH}/key.txt" | awk '{print $2}')
-    public_key=$(grep "PublicKey:" "${FILE_PATH}/key.txt" | awk '{print $2}')
+    private_key=$(grep "PrivateKey:" "key.txt" | awk '{print $2}')
+    public_key=$(grep "PublicKey:" "key.txt" | awk '{print $2}')
     
     if [ -n "$private_key" ] && [ -n "$public_key" ]; then
         true
     else
         # 读取失败，重新生成
-        output=$("${FILE_PATH}/web" generate reality-keypair)
-        echo "$output" > "${FILE_PATH}/key.txt"
+        output=$("web" generate reality-keypair)
+        echo "$output" > "key.txt"
         private_key=$(echo "${output}" | awk '/PrivateKey:/ {print $2}')
         public_key=$(echo "${output}" | awk '/PublicKey:/ {print $2}')
     fi
 else
-    output=$("${FILE_PATH}/web" generate reality-keypair)
-    echo "$output" > "${FILE_PATH}/key.txt"
+    output=$("web" generate reality-keypair)
+    echo "$output" > "key.txt"
     private_key=$(echo "${output}" | awk '/PrivateKey:/ {print $2}')
     public_key=$(echo "${output}" | awk '/PublicKey:/ {print $2}')
 fi
 
 # 生成证书和私钥
 if command -v openssl >/dev/null 2>&1; then
-    openssl ecparam -genkey -name prime256v1 -out "${FILE_PATH}/private.key"
-    openssl req -new -x509 -days 3650 -key "${FILE_PATH}/private.key" -out "${FILE_PATH}/cert.pem" -subj "/CN=bing.com"
+    openssl ecparam -genkey -name prime256v1 -out "private.key"
+    openssl req -new -x509 -days 3650 -key "private.key" -out "cert.pem" -subj "/CN=bing.com"
 else
     # 创建私钥文件
-    cat > "${FILE_PATH}/private.key" << 'EOF'
+    cat > "private.key" << 'EOF'
 -----BEGIN EC PARAMETERS-----
 BggqhkjOPQMBBw==
 -----END EC PARAMETERS-----
@@ -115,7 +119,7 @@ AwEHoUQDQgAE1kHafPj07rJG+HboH2ekAI4r+e6TL38GWASANnngZreoQDF16ARa
 EOF
 
     # 创建证书文件
-    cat > "${FILE_PATH}/cert.pem" << 'EOF'
+    cat > "cert.pem" << 'EOF'
 -----BEGIN CERTIFICATE-----
 MIIBejCCASGgAwIBAgIUfWeQL3556PNJLp/veCFxGNj9crkwCgYIKoZIzj0EAwIw
 EzERMA8GA1UEAwwIYmluZy5jb20wHhcNMjUwOTE4MTgyMDIyWhcNMzUwOTE2MTgy
@@ -129,7 +133,7 @@ eQ6OFb9LbLYL9f+sAiAffoMbi4y/0YUSlTtz7as9S8/lciBF5VCUoVIKS+vX2g==
 EOF
 fi
 
-  cat > ${FILE_PATH}/config.json << EOF
+  cat > config.json << EOF
 {
     "log": {
       "disabled": true,
@@ -279,22 +283,22 @@ fi
 }
 EOF
 sleep 1
-if [ -e "${FILE_PATH}/web" ]; then
-    nohup "${FILE_PATH}/web" run -c ${FILE_PATH}/config.json >/dev/null 2>&1 &
+if [ -e "web" ]; then
+    nohup ./web run -c config.json >/dev/null 2>&1 &
     sleep 2
     echo -e "\e[1;32mweb is running\e[0m"
 fi
 
 if [ "$DISABLE_ARGO" == 'false' ]; then
-  if [ -e "${FILE_PATH}/bot" ]; then
+  if [ -e "bot" ]; then
       if [[ $ARGO_AUTH =~ ^[A-Z0-9a-z=]{120,250}$ ]]; then
         args="tunnel --edge-ip-version auto --no-autoupdate --protocol http2 run --token ${ARGO_AUTH}"
       elif [[ $ARGO_AUTH =~ TunnelSecret ]]; then
-        args="tunnel --edge-ip-version auto --config ${FILE_PATH}/tunnel.yml run"
+        args="tunnel --edge-ip-version auto --config tunnel.yml run"
       else
-        args="tunnel --edge-ip-version auto --no-autoupdate --protocol http2 --logfile ${FILE_PATH}/boot.log --loglevel info --url http://localhost:$ARGO_PORT"
+        args="tunnel --edge-ip-version auto --no-autoupdate --protocol http2 --logfile boot.log --loglevel info --url http://localhost:$ARGO_PORT"
       fi
-      nohup "${FILE_PATH}/bot" $args >/dev/null 2>&1 &
+      nohup ./bot $args >/dev/null 2>&1 &
       sleep 2
       echo -e "\e[1;32mbot is running\e[0m" 
   fi
@@ -313,7 +317,7 @@ if [ "$DISABLE_ARGO" == 'false' ]; then
     local argodomain=""
     while [[ $retry -lt $max_retries ]]; do
       ((retry++))
-      argodomain=$(sed -n 's|.*https://\([^/]*trycloudflare\.com\).*|\1|p' ${FILE_PATH}/boot.log)
+      argodomain=$(sed -n 's|.*https://\([^/]*trycloudflare\.com\).*|\1|p' boot.log)
       if [[ -n $argodomain ]]; then
         break
       fi
@@ -335,26 +339,26 @@ costom_name() { if [ -n "$NAME" ]; then echo "${NAME}_${ISP}"; else echo "${ISP}
 VMESS="{ \"v\": \"2\", \"ps\": \"$(costom_name)\", \"add\": \"${CFIP}\", \"port\": \"${CFPORT}\", \"id\": \"${UUID}\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"${argodomain}\", \"path\": \"/vmess-argo?ed=2560\", \"tls\": \"tls\", \"sni\": \"${argodomain}\", \"alpn\": \"\", \"fp\": \"firefox\"}"
 
 if [ "$DISABLE_ARGO" == 'false' ]; then
-cat > ${FILE_PATH}/list.txt <<EOF
+cat > list.txt <<EOF
 vmess://$(echo "$VMESS" | base64 | tr -d '\n')
 EOF
 fi
 
 if [ "$TUIC_PORT" != "" ]; then
-  echo -e "\ntuic://${UUID}:admin@${IP}:${TUIC_PORT}?sni=www.bing.com&alpn=h3&congestion_control=bbr#$(costom_name)" >> ${FILE_PATH}/list.txt
+  echo -e "\ntuic://${UUID}:admin@${IP}:${TUIC_PORT}?sni=www.bing.com&alpn=h3&congestion_control=bbr#$(costom_name)" >> list.txt
 fi
 
 if [ "$HY2_PORT" != "" ]; then
-  echo -e "\nhysteria2://${UUID}@${IP}:${HY2_PORT}/?sni=www.bing.com&alpn=h3&insecure=1#$(costom_name)" >> ${FILE_PATH}/list.txt
+  echo -e "\nhysteria2://${UUID}@${IP}:${HY2_PORT}/?sni=www.bing.com&alpn=h3&insecure=1#$(costom_name)" >> list.txt
 fi
 
 if [ "$REALITY_PORT" != "" ]; then
-  echo -e "\nvless://${UUID}@${IP}:${REALITY_PORT}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.nazhumi.com&fp=firefox&pbk=${public_key}&type=tcp&headerType=none#$(costom_name)" >> ${FILE_PATH}/list.txt
+  echo -e "\nvless://${UUID}@${IP}:${REALITY_PORT}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.nazhumi.com&fp=firefox&pbk=${public_key}&type=tcp&headerType=none#$(costom_name)" >> list.txt
 fi
 
-base64 ${FILE_PATH}/list.txt | tr -d '\n' > ${FILE_PATH}/sub.txt
-cat ${FILE_PATH}/list.txt
-echo -e "\n\n\e[1;32m${FILE_PATH}/sub.txt saved successfully\e[0m"
+base64 list.txt | tr -d '\n' > sub.txt
+cat list.txt
+echo -e "\n\n\e[1;32msub.txt saved successfully\e[0m"
 
 echo -e "\n\e[1;32mRunning done!\e[0m\n"
 
