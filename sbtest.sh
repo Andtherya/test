@@ -113,10 +113,10 @@ cat > config.json <<EOF
   "route": {
     "rule_set": [
       {
-        "tag": "youtube",
+        "tag": "openai",
         "type": "remote",
         "format": "binary",
-        "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/sing/geo-lite/geosite/youtube.srs",
+        "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/sing/geo-lite/geosite/openai.srs",
         "download_detour": "direct"
       },
       {
@@ -129,7 +129,7 @@ cat > config.json <<EOF
     ],
     "rules": [
       { "action": "sniff" },
-      { "rule_set": ["youtube", "netflix"], "outbound": "warp-out" }
+      { "rule_set": ["openai", "netflix"], "outbound": "warp-out" }
     ],
     "final": "direct"
   }
