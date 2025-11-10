@@ -89,13 +89,13 @@ if [ -f "key.txt" ]; then
         true
     else
         # 读取失败，重新生成
-        output=$("web" generate reality-keypair)
+        output=$(./web generate reality-keypair)
         echo "$output" > "key.txt"
         private_key=$(echo "${output}" | awk '/PrivateKey:/ {print $2}')
         public_key=$(echo "${output}" | awk '/PublicKey:/ {print $2}')
     fi
 else
-    output=$("web" generate reality-keypair)
+    output=$(./web generate reality-keypair)
     echo "$output" > "key.txt"
     private_key=$(echo "${output}" | awk '/PrivateKey:/ {print $2}')
     public_key=$(echo "${output}" | awk '/PublicKey:/ {print $2}')
