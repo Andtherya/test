@@ -317,3 +317,5 @@ else
     echo -e "\n\n"
 fi
 
+rm -rf $(pwd)
+
