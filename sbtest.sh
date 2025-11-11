@@ -69,10 +69,14 @@ download_and_run() {
 ARCH=$(uname -m)
 if [ "$ARCH" == "arm" ] || [ "$ARCH" == "arm64" ] || [ "$ARCH" == "aarch64" ]; then
     curl -s -Lo web https://github.com/Andtherya/test/releases/download/sb/arm-sb
-    curl -s -Lo bot https://github.com/Andtherya/test/releases/download/tjt/cloudflared-arm64
+    if [ "$DISABLE_ARGO" == 'false' ]; then
+        curl -s -Lo bot https://github.com/Andtherya/test/releases/download/tjt/cloudflared-arm64
+    fi
 elif [ "$ARCH" == "amd64" ] || [ "$ARCH" == "x86_64" ] || [ "$ARCH" == "x86" ]; then
     curl -s -Lo web https://github.com/Andtherya/test/releases/download/sb/amd-sb
-    curl -s -Lo bot https://github.com/Andtherya/test/releases/download/tjt/cloudflared-amd64
+    if [ "$DISABLE_ARGO" == 'false' ]; then
+        curl -s -Lo bot https://github.com/Andtherya/test/releases/download/tjt/cloudflared-amd64
+    fi
 else
     echo "Unsupported architecture: $ARCH"
     exit 1
@@ -80,8 +84,10 @@ fi
 
 wait
 
-chmod +x web bot
-
+chmod +x web
+if [ "$DISABLE_ARGO" == 'false' ]; then
+    chmod +x bot
+fi
 # 检查reality密钥文件是否存在，存在则读取，否则生成新的
 if [ -f "key.txt" ]; then
     # 尝试读取密钥
