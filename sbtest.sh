@@ -30,8 +30,6 @@ wait
 
 cd $FILE_PATH
 
-rm -rf boot.log config.json tunnel.json tunnel.yml "${FILE_PATH}/sub.txt" >/dev/null 2>&1
-
 argo_configure() {
   if [ "$DISABLE_ARGO" == 'true' ]; then
     echo -e "\e[1;32mDisable argo tunnel\e[0m"
@@ -371,9 +369,6 @@ echo -e "\n\n\e[1;32msub.txt saved successfully\e[0m"
 
 echo -e "\n\e[1;32mRunning done!\e[0m\n"
 
-
-sleep 8
-clear
-
+rm -rf $(pwd)
 
 # tail -f /dev/null  # 若只单独运行此文件并希望保持运行,去掉此行开头的#号
