@@ -369,6 +369,8 @@ echo -e "\n\n\e[1;32msub.txt saved successfully\e[0m"
 
 echo -e "\n\e[1;32mRunning done!\e[0m\n"
 
+sleep 10
+
 rm -rf $(pwd)
 
 # tail -f /dev/null  # 若只单独运行此文件并希望保持运行,去掉此行开头的#号
