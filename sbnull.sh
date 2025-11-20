@@ -11,7 +11,7 @@ export ARGO_PORT=${ARGO_PORT:-'34586'}         # argo端口 使用固定隧道to
 export TUIC_PORT=${TUIC_PORT:-''}             # Tuic 端口，支持多端口玩具可填写，否则不动
 export HY2_PORT=${HY2_PORT:-''}               # Hy2 端口，支持多端口玩具可填写，否则不动
 export REALITY_PORT=${REALITY_PORT:-''}       # reality 端口,支持多端口玩具可填写，否则不动   
-export DISABLE_ARGO=${DISABLE_ARGO:-'false'}  # 是否禁用argo, true为禁用,false为不禁用
+export DISABLE_ARGO=${DISABLE_ARGO:-'false'}  # 是否禁用argo, true为禁用,false为不禁用 
 
 rm -rf "$FILE_PATH"
 
