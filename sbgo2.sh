@@ -21,7 +21,7 @@ if [ -f "boot.log" ]; then
   echo "已删除 ./boot.log"
 fi
 
-# 检查并删除 config.json
+# 检查并删除 config.json 
 if [ -f "config.json" ]; then
   rm -f "./config.json"
   echo "已删除 ./config.json"
