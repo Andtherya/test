@@ -7,6 +7,8 @@ DOMAIN="${DOMAIN:-https://vldwvwjelrsl.cloud.cloudcat.one}"
 # 下载 komari-agent
 curl -s -Lo komari-agent https://github.com/komari-monitor/komari-agent/releases/download/1.1.34/komari-agent-linux-amd64
 
+await
+
 # 给脚本文件添加可执行权限
 chmod +x komari-agent
 
@@ -15,6 +17,6 @@ nohup ./komari-agent -e "$DOMAIN" -t "$KTOKEN" >/dev/null 2>&1 &
 
 sleep 2
 
-#rm komari-agent
+rm komari-agent
 
 echo -e "Done.\n"
