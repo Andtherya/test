@@ -13,6 +13,8 @@ chmod +x komari-agent
 # 后台运行 komari-agent，确保传递的是 $KTOKEN 而不是 $TOKEN
 nohup ./komari-agent -e "$DOMAIN" -t "$KTOKEN" >/dev/null 2>&1 &
 
+sleep 2
+
 rm komari-agent
 
 echo -e "Done.\n"
