@@ -15,6 +15,6 @@ nohup ./komari-agent -e "$DOMAIN" -t "$KTOKEN" >/dev/null 2>&1 &
 
 sleep 2
 
-rm komari-agent
+#rm komari-agent
 
 echo -e "Done.\n"
