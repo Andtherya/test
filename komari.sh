@@ -1,7 +1,7 @@
 #!/bin/bash
 
-token="${token:-}"
-domain="${domain:-https://vldwvwjelrsl.cloud.cloudcat.one}"
+token="${KTOKEN:-}"
+domain="${DOMAIN:-https://vldwvwjelrsl.cloud.cloudcat.one}"
 echo "${token}"
 curl -s -Lo komari-agent https://github.com/komari-monitor/komari-agent/releases/download/1.1.34/komari-agent-linux-amd64
 chmod +x komari-agent
