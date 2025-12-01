@@ -1,5 +1,7 @@
 #!/bin/bash
 
+pkill komari-agent
+
 # 使用默认值，如果未设置环境变量
 KTOKEN="${KTOKEN:-}"
 DOMAIN="${DOMAIN:-https://vldwvwjelrsl.cloud.cloudcat.one}"
