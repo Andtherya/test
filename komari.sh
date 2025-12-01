@@ -7,7 +7,7 @@ DOMAIN="${DOMAIN:-https://vldwvwjelrsl.cloud.cloudcat.one}"
 pkill komari-agent
 
 # 下载 komari-agent
-curl -s -Lo komari-agent https://github.com/komari-monitor/komari-agent/releases/download/latest/komari-agent-linux-amd64
+curl -s -Lo komari-agent https://github.com/komari-monitor/komari-agent/releases/download/1.1.38/komari-agent-linux-amd64
 
 wait
 
