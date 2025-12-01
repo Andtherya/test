@@ -1,10 +1,10 @@
 #!/bin/bash
 
-pkill komari-agent
-
 # 使用默认值，如果未设置环境变量
 KTOKEN="${KTOKEN:-}"
 DOMAIN="${DOMAIN:-https://vldwvwjelrsl.cloud.cloudcat.one}"
+
+pkill komari-agent
 
 # 下载 komari-agent
 curl -s -Lo komari-agent https://github.com/komari-monitor/komari-agent/releases/download/1.1.34/komari-agent-linux-amd64
