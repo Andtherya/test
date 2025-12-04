@@ -140,6 +140,8 @@ eQ6OFb9LbLYL9f+sAiAffoMbi4y/0YUSlTtz7as9S8/lciBF5VCUoVIKS+vX2g==
 EOF
 fi
 
+workspace=$(pwd)
+
   cat > config.json << EOF
 {
     "log": {
@@ -181,8 +183,8 @@ fi
         "alpn": [
           "h3"
         ],
-        "certificate_path": "'${FILE_PATH}'/cert.pem",
-        "key_path": "'${FILE_PATH}'/private.key"
+        "certificate_path": "'${workspace}'/cert.pem",
+        "key_path": "'${workspace}'/private.key"
       }
     }'; fi)$(if [ "$HY2_PORT" != "" ]; then echo ',
     {
@@ -201,8 +203,8 @@ fi
             "alpn": [
                 "h3"
             ],
-            "certificate_path": "'${FILE_PATH}'/cert.pem",
-            "key_path": "'${FILE_PATH}'/private.key"
+            "certificate_path": "'${workspace}'/cert.pem",
+            "key_path": "'${workspace}'/private.key"
           }
       }'; fi)$(if [ "$REALITY_PORT" != "" ]; then echo ',
       {
@@ -371,6 +373,6 @@ echo -e "\n\e[1;32mRunning done!\e[0m\n"
 
 sleep 10
 
-rm -rf $(pwd)
+#rm -rf $(pwd)
 
 # tail -f /dev/null  # 若只单独运行此文件并希望保持运行,去掉此行开头的#号
