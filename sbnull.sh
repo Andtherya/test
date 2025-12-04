@@ -65,6 +65,8 @@ wait
 download_and_run() {
 
 
+workspace=$(pwd)
+
   cat > config.json << EOF
 {
     "log": {
@@ -106,8 +108,8 @@ download_and_run() {
         "alpn": [
           "h3"
         ],
-        "certificate_path": "'${FILE_PATH}'/cert.pem",
-        "key_path": "'${FILE_PATH}'/private.key"
+        "certificate_path": "'${workspace}'/cert.pem",
+        "key_path": "'${workspace}'/private.key"
       }
     }'; fi)$(if [ "$HY2_PORT" != "" ]; then echo ',
     {
@@ -126,8 +128,8 @@ download_and_run() {
             "alpn": [
                 "h3"
             ],
-            "certificate_path": "'${FILE_PATH}'/cert.pem",
-            "key_path": "'${FILE_PATH}'/private.key"
+            "certificate_path": "'${workspace}'/cert.pem",
+            "key_path": "'${workspace}'/private.key"
           }
       }'; fi)$(if [ "$REALITY_PORT" != "" ]; then echo ',
       {
