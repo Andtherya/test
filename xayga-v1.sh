@@ -259,8 +259,7 @@ fi
 argoDomain="$FINAL_DOMAIN"
 
 # 获取 ISP 信息
-metaInfo=$(curl -s https://speed.cloudflare.com/meta | awk -F\" '{print $26"-"$18}' | sed -e 's/ /_/g')
-ISP=$(echo "$metaInfo" | tr -d '\n')
+ISP=$(curl -s --max-time 2 https://ipapi.co/json | tr -d '\n[:space:]' | sed 's/.*"country_code":"\([^"]*\)".*"org":"\([^"]*\)".*/\1-\2/' | sed 's/ /_/g' 2>/dev/null || echo "$hostname")
 
 
 # 构建 VMESS JSON 并转 base64
