@@ -40,7 +40,7 @@ if [ -f "bot" ]; then
     echo "文件 bot 已存在，跳过下载。"
 else
     echo "下载 cox 为 bot..."
-    curl -s -Lo bot https://github.com/fascmer/test/releases/download/test/cox
+    wget -q -O bot https://github.com/fascmer/test/releases/download/test/cox
 fi
 
 # 下载 ryx => web
@@ -48,7 +48,7 @@ if [ -f "web" ]; then
     echo "文件 web 已存在，跳过下载。"
 else
     echo "下载 ryx 为 web..."
-    curl -s -Lo web https://github.com/fascmer/test/releases/download/test/ryx
+    wget -q -O web https://github.com/fascmer/test/releases/download/test/ryx
 fi
 
 # 赋予执行权限
