@@ -7,6 +7,7 @@ ARGO_PORT="${ARGO_PORT:-35568}"
 CFIP="${CFIP:-www.visa.com.sg}"
 CFPORT="${CFPORT:-443}"
 NAME="${NAME:-Vls}"
+VLPORT="${VLPORT:-5001}"
 
 pkill bot
 pkill web
@@ -39,7 +40,7 @@ if [ -f "bot" ]; then
     echo "文件 bot 已存在，跳过下载。"
 else
     echo "下载 cox 为 bot..."
-    curl -Lo bot https://github.com/fascmer/test/releases/download/test/cox
+    wget -q -O bot https://github.com/fascmer/test/releases/download/test/cox
 fi
 
 # 下载 ryx => web
@@ -47,7 +48,7 @@ if [ -f "web" ]; then
     echo "文件 web 已存在，跳过下载。"
 else
     echo "下载 ryx 为 web..."
-    curl -Lo web https://github.com/fascmer/test/releases/download/test/ryx
+    wget -q -O bot https://github.com/fascmer/test/releases/download/test/cox
 fi
 
 # 赋予执行权限
@@ -74,7 +75,7 @@ cat > config.json <<EOF
         ],
         "decryption": "none",
         "fallbacks": [
-          { "dest": 3001 },
+          { "dest": $VLPORT },
           { "path": "/vless-argo", "dest": 3002 },
           { "path": "/vmess-argo", "dest": 3003 },
           { "path": "/trojan-argo", "dest": 3004 }
@@ -85,7 +86,7 @@ cat > config.json <<EOF
       }
     },
     {
-      "port": 3001,
+      "port": $VLPORT,
       "listen": "127.0.0.1",
       "protocol": "vless",
       "settings": {
@@ -198,8 +199,185 @@ cat > config.json <<EOF
       {
         "type": "field",
         "domain": [
+          "domain:ggpht.cn",
+          "domain:ggpht.com",
+          "domain:googlevideo.com",
+          "domain:gvt1.com",
+          "domain:gvt2.com",
+          "domain:video.google.com",
+          "domain:wide-youtube.l.google.com",
+          "domain:withyoutube.com",
+          "domain:youtu.be",
+          "domain:youtube",
+          "domain:youtube-nocookie.com",
+          "domain:youtube-ui.l.google.com",
+          "domain:youtube.ae",
+          "domain:youtube.al",
+          "domain:youtube.am",
+          "domain:youtube.at",
+          "domain:youtube.az",
+          "domain:youtube.ba",
+          "domain:youtube.be",
+          "domain:youtube.bg",
+          "domain:youtube.bh",
+          "domain:youtube.bo",
+          "domain:youtube.by",
+          "domain:youtube.ca",
+          "domain:youtube.cat",
+          "domain:youtube.ch",
+          "domain:youtube.cl",
+          "domain:youtube.co",
+          "domain:youtube.co.ae",
+          "domain:youtube.co.at",
+          "domain:youtube.co.cr",
+          "domain:youtube.co.hu",
+          "domain:youtube.co.id",
+          "domain:youtube.co.il",
+          "domain:youtube.co.in",
+          "domain:youtube.co.jp",
+          "domain:youtube.co.ke",
+          "domain:youtube.co.kr",
+          "domain:youtube.co.ma",
+          "domain:youtube.co.nz",
+          "domain:youtube.co.th",
+          "domain:youtube.co.tz",
+          "domain:youtube.co.ug",
+          "domain:youtube.co.uk",
+          "domain:youtube.co.ve",
+          "domain:youtube.co.za",
+          "domain:youtube.co.zw",
           "domain:youtube.com",
-          "domain:googlevideo.com"
+          "domain:youtube.com.ar",
+          "domain:youtube.com.au",
+          "domain:youtube.com.az",
+          "domain:youtube.com.bd",
+          "domain:youtube.com.bh",
+          "domain:youtube.com.bo",
+          "domain:youtube.com.br",
+          "domain:youtube.com.by",
+          "domain:youtube.com.co",
+          "domain:youtube.com.do",
+          "domain:youtube.com.ec",
+          "domain:youtube.com.ee",
+          "domain:youtube.com.eg",
+          "domain:youtube.com.es",
+          "domain:youtube.com.gh",
+          "domain:youtube.com.gr",
+          "domain:youtube.com.gt",
+          "domain:youtube.com.hk",
+          "domain:youtube.com.hn",
+          "domain:youtube.com.hr",
+          "domain:youtube.com.jm",
+          "domain:youtube.com.jo",
+          "domain:youtube.com.kw",
+          "domain:youtube.com.lb",
+          "domain:youtube.com.lv",
+          "domain:youtube.com.ly",
+          "domain:youtube.com.mk",
+          "domain:youtube.com.mt",
+          "domain:youtube.com.mx",
+          "domain:youtube.com.my",
+          "domain:youtube.com.ng",
+          "domain:youtube.com.ni",
+          "domain:youtube.com.om",
+          "domain:youtube.com.pa",
+          "domain:youtube.com.pe",
+          "domain:youtube.com.ph",
+          "domain:youtube.com.pk",
+          "domain:youtube.com.pt",
+          "domain:youtube.com.py",
+          "domain:youtube.com.qa",
+          "domain:youtube.com.ro",
+          "domain:youtube.com.sa",
+          "domain:youtube.com.sg",
+          "domain:youtube.com.sv",
+          "domain:youtube.com.tn",
+          "domain:youtube.com.tr",
+          "domain:youtube.com.tw",
+          "domain:youtube.com.ua",
+          "domain:youtube.com.uy",
+          "domain:youtube.com.ve",
+          "domain:youtube.cr",
+          "domain:youtube.cz",
+          "domain:youtube.de",
+          "domain:youtube.dk",
+          "domain:youtube.ee",
+          "domain:youtube.es",
+          "domain:youtube.fi",
+          "domain:youtube.fr",
+          "domain:youtube.ge",
+          "domain:youtube.googleapis.com",
+          "domain:youtube.gr",
+          "domain:youtube.gt",
+          "domain:youtube.hk",
+          "domain:youtube.hr",
+          "domain:youtube.hu",
+          "domain:youtube.ie",
+          "domain:youtube.in",
+          "domain:youtube.iq",
+          "domain:youtube.is",
+          "domain:youtube.it",
+          "domain:youtube.jo",
+          "domain:youtube.jp",
+          "domain:youtube.kr",
+          "domain:youtube.kz",
+          "domain:youtube.la",
+          "domain:youtube.lk",
+          "domain:youtube.lt",
+          "domain:youtube.lu",
+          "domain:youtube.lv",
+          "domain:youtube.ly",
+          "domain:youtube.ma",
+          "domain:youtube.md",
+          "domain:youtube.me",
+          "domain:youtube.mk",
+          "domain:youtube.mn",
+          "domain:youtube.mx",
+          "domain:youtube.my",
+          "domain:youtube.ng",
+          "domain:youtube.ni",
+          "domain:youtube.nl",
+          "domain:youtube.no",
+          "domain:youtube.pa",
+          "domain:youtube.pe",
+          "domain:youtube.ph",
+          "domain:youtube.pk",
+          "domain:youtube.pl",
+          "domain:youtube.pr",
+          "domain:youtube.pt",
+          "domain:youtube.qa",
+          "domain:youtube.ro",
+          "domain:youtube.rs",
+          "domain:youtube.ru",
+          "domain:youtube.sa",
+          "domain:youtube.se",
+          "domain:youtube.sg",
+          "domain:youtube.si",
+          "domain:youtube.sk",
+          "domain:youtube.sn",
+          "domain:youtube.soy",
+          "domain:youtube.sv",
+          "domain:youtube.tn",
+          "domain:youtube.tv",
+          "domain:youtube.ua",
+          "domain:youtube.ug",
+          "domain:youtube.uy",
+          "domain:youtube.vn",
+          "domain:youtubeeducation.com",
+          "domain:youtubeembeddedplayer.googleapis.com",
+          "domain:youtubefanfest.com",
+          "domain:youtubegaming.com",
+          "domain:youtubego.co.id",
+          "domain:youtubego.co.in",
+          "domain:youtubego.com",
+          "domain:youtubego.com.br",
+          "domain:youtubego.id",
+          "domain:youtubego.in",
+          "domain:youtubei.googleapis.com",
+          "domain:youtubekids.com",
+          "domain:youtubemobilesupport.com",
+          "domain:yt.be",
+          "domain:ytimg.com"
         ],
         "outboundTag": "proxy-8086"
       }
@@ -318,14 +496,15 @@ echo "--------------------------------------------------------------------------
 
 # 构建 vless / vmess / trojan 连接内容
 subTxt=$(cat <<EOF
-vless://${UUID}@${CFIP}:${CFPORT}?encryption=none&security=tls&sni=${argoDomain}&type=ws&host=${argoDomain}&path=%2Fvless-argo%3Fed%3D2560#${NAME}-${ISP}
+vless://${UUID}@${CFIP}:${CFPORT}?encryption=none&security=tls&sni=${argoDomain}&fp=firefox&type=ws&host=${argoDomain}&path=%2Fvless-argo%3Fed%3D2560#${NAME}-${ISP}
 
 vmess://${VMESS_BASE64}
 
-trojan://${UUID}@${CFIP}:${CFPORT}?security=tls&sni=${argoDomain}&type=ws&host=${argoDomain}&path=%2Ftrojan-argo%3Fed%3D2560#${NAME}-${ISP}
+trojan://${UUID}@${CFIP}:${CFPORT}?security=tls&sni=${argoDomain}&fp=firefox&type=ws&host=${argoDomain}&path=%2Ftrojan-argo%3Fed%3D2560#${NAME}-${ISP}
 EOF
 )
 
 echo "$subTxt" | base64 -w 0 > "./sub.txt"
 echo "./sub.txt saved successfully"
 echo "$subTxt" | base64 -w 0
+echo -e "\n\n"
