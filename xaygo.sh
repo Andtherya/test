@@ -76,9 +76,9 @@ cat > config.json <<EOF
         "decryption": "none",
         "fallbacks": [
           { "dest": $VLPORT },
-          { "path": "/vless-argo", "dest": 3002 },
-          { "path": "/vmess-argo", "dest": 3003 },
-          { "path": "/trojan-argo", "dest": 3004 }
+          { "path": "/vless-argo", "dest": $((VLPORT + 1)) },
+          { "path": "/vmess-argo", "dest": $((VLPORT + 2)) },
+          { "path": "/trojan-argo", "dest": $((VLPORT + 3)) }
         ]
       },
       "streamSettings": {
@@ -101,7 +101,7 @@ cat > config.json <<EOF
       }
     },
     {
-      "port": 3002,
+      "port": $((VLPORT + 1)),
       "listen": "127.0.0.1",
       "protocol": "vless",
       "settings": {
@@ -124,7 +124,7 @@ cat > config.json <<EOF
       }
     },
     {
-      "port": 3003,
+      "port": $((VLPORT + 2)),
       "listen": "127.0.0.1",
       "protocol": "vmess",
       "settings": {
@@ -145,7 +145,7 @@ cat > config.json <<EOF
       }
     },
     {
-      "port": 3004,
+      "port": $((VLPORT + 3)),
       "listen": "127.0.0.1",
       "protocol": "trojan",
       "settings": {
