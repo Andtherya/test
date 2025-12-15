@@ -258,8 +258,10 @@ fi
 argoDomain="$FINAL_DOMAIN"
 
 # 获取 ISP 信息
-ISP=$(curl -s --max-time 2 https://ipapi.co/json | tr -d '\n[:space:]' | sed 's/.*"country_code":"\([^"]*\)".*"org":"\([^"]*\)".*/\1-\2/' | sed 's/ /_/g' 2>/dev/null || echo "$hostname")
-
+JSON="$(curl -s https://ipinfo.io/json)"
+COUNTRY="$(echo "$JSON" | sed -n 's/.*"country":[[:space:]]*"\([^"]*\)".*/\1/p')"
+ORG="$(echo "$JSON" | sed -n 's/.*"org":[[:space:]]*"AS[0-9]*[[:space:]]*\([^"]*\)".*/\1/p')"
+ISP="${COUNTRY}-${ORG}"
 
 # 构建 VMESS JSON 并转 base64
 VMESS_JSON=$(cat <<EOF
