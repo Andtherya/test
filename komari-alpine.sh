@@ -27,7 +27,7 @@ cat >/etc/init.d/komari-agent <<EOF
 description="komari Service"
 
 command="${WORKDIR}/komari-agent"
-command_args="-e ${DOMAIN} -t ${KTOKEN}"
+command_args="-e ${DOMAIN} -t ${KTOKEN} --disable-auto-update"
 command_user="root"
 directory="${WORKDIR}"
 
