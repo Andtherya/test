@@ -20,32 +20,22 @@ else
     chmod +x komari-agent
 fi
 
-cat >/etc/systemd/system/komari-agent.service <<'EOF'
+cat >/etc/systemd/system/komari-agent.service <<EOF
 [Unit]
-Description=Komari Agent Service
-After=network-online.target
-Wants=network-online.target
+Description=komari-agent service
+After=komari-agent.service
 
 [Service]
-Type=simple
-EnvironmentFile=/etc/default/komari-agent
 WorkingDirectory=${WORKDIR}
 ExecStart=${WORKDIR}/komari-agent -e ${DOMAIN} -t ${KTOKEN} --disable-auto-update
-
-User=root
 Restart=always
 RestartSec=5
-LimitNOFILE=1048576
-NoNewPrivileges=true
-PrivateTmp=true
 
 [Install]
 WantedBy=multi-user.target
 EOF
 
-systemctl daemon-reexec
-systemctl daemon-reload
-systemctl enable komari-agent
-systemctl restart komari-agent
-systemctl status komari-agent
+sudo systemctl daemon-reload
+sudo systemctl enable komari-agent
+sudo systemctl restart komari-agent
 
