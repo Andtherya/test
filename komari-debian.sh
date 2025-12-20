@@ -4,8 +4,6 @@
 KTOKEN="${KTOKEN:-}"
 DOMAIN="${DOMAIN:-https://vldwvwjelrsl.cloud.cloudcat.one}"
 WORKDIR=$(pwd)
-BIN_NAME="komari-agent"
-SERVICE_NAME="komari-agent"
 
 if [ -z "${KTOKEN}" ]; then
     echo "Error: KTOKEN is not set or empty." >&2
@@ -22,19 +20,7 @@ else
     chmod +x komari-agent
 fi
 
-# ===== 写入环境变量文件 =====
-echo "🧾 写入 /etc/default/${SERVICE_NAME} ..."
-cat >/etc/default/${SERVICE_NAME} <<EOF
-WORKDIR=${WORKDIR}
-DOMAIN=${DOMAIN}
-KTOKEN=${KTOKEN}
-EOF
-
-chmod 600 /etc/default/${SERVICE_NAME}
-
-# ===== 创建 systemd service =====
-echo "⚙️ 创建 systemd service ..."
-cat >/etc/systemd/system/${SERVICE_NAME}.service <<'EOF'
+cat >/etc/systemd/system/komari-agent.service <<'EOF'
 [Unit]
 Description=Komari Agent Service
 After=network-online.target
@@ -49,7 +35,6 @@ ExecStart=${WORKDIR}/komari-agent -e ${DOMAIN} -t ${KTOKEN} --disable-auto-updat
 User=root
 Restart=always
 RestartSec=5
-
 LimitNOFILE=1048576
 NoNewPrivileges=true
 PrivateTmp=true
@@ -58,19 +43,9 @@ PrivateTmp=true
 WantedBy=multi-user.target
 EOF
 
-# ===== 重新加载并启动 =====
-echo "🔄 重新加载 systemd..."
 systemctl daemon-reexec
 systemctl daemon-reload
+systemctl enable komari-agent
+systemctl restart komari-agent
+systemctl status komari-agent
 
-echo "🚀 启动 komari-agent..."
-systemctl enable ${SERVICE_NAME}
-systemctl restart ${SERVICE_NAME}
-
-# ===== 状态检查 =====
-sleep 1
-echo "📊 服务状态："
-systemctl --no-pager --full status ${SERVICE_NAME}
-
-echo "✅ komari-agent 服务已在 Debian 上部署并启动完成！"
-echo "👉 日志查看：journalctl -u ${SERVICE_NAME} -f"
