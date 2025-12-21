@@ -5,6 +5,24 @@ KTOKEN="${KTOKEN:-}"
 DOMAIN="${DOMAIN:-https://vldwvwjelrsl.cloud.cloudcat.one}"
 WORKDIR=$(pwd)
 
+ARCH=$(uname -m)
+case $ARCH in
+    "aarch64" | "arm64" | "arm")
+        ARCH="arm64"
+        ;;
+    "x86_64" | "amd64" | "x86")
+        ARCH="amd64"
+        ;;
+    "s390x" | "s390")
+        ARCH="s390x"
+        ;;
+    *)
+        echo "Unsupported architecture: $ARCH"
+        exit 1
+        ;;
+esac
+
+
 if [ -z "${KTOKEN}" ]; then
     echo "Error: KTOKEN is not set or empty." >&2
     exit 1
@@ -15,7 +33,7 @@ if [ -f "komari-agent" ]; then
     echo "文件 komari-agent 已存在，跳过下载。"
 else
     echo "下载 komari-agent..."
-    curl -s -Lo komari-agent https://github.com/komari-monitor/komari-agent/releases/download/1.1.38/komari-agent-linux-amd64
+    curl -s -Lo komari-agent "https://github.com/komari-monitor/komari-agent/releases/download/1.1.38/komari-agent-linux-$ARCH"
     wait
     chmod +x komari-agent
 fi
