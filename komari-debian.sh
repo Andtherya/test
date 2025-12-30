@@ -15,7 +15,7 @@ if [ -f "komari-agent" ]; then
     echo "文件 komari-agent 已存在，跳过下载。"
 else
     echo "下载 komari-agent..."
-    curl -s -Lo komari-agent https://github.com/komari-monitor/komari-agent/releases/download/1.1.38/komari-agent-linux-arm64
+    curl -s -Lo komari-agent https://github.com/komari-monitor/komari-agent/releases/download/1.1.38/komari-agent-linux-amd64
     wait
     chmod +x komari-agent
 fi
