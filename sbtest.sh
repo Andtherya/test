@@ -348,11 +348,9 @@ costom_name() { if [ -n "$NAME" ]; then echo "${NAME}_${ISP}"; else echo "${ISP}
 
 VMESS="{ \"v\": \"2\", \"ps\": \"$(costom_name)\", \"add\": \"${CFIP}\", \"port\": \"${CFPORT}\", \"id\": \"${UUID}\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"${argodomain}\", \"path\": \"/vmess-argo?ed=2560\", \"tls\": \"tls\", \"sni\": \"${argodomain}\", \"alpn\": \"\", \"fp\": \"firefox\"}"
 
-if [ "$DISABLE_ARGO" == 'false' ]; then
 cat > list.txt <<EOF
 vmess://$(echo "$VMESS" | base64 | tr -d '\n')
 EOF
-fi
 
 if [ "$TUIC_PORT" != "" ]; then
   echo -e "\ntuic://${UUID}:admin@${IP}:${TUIC_PORT}?sni=www.bing.com&alpn=h3&congestion_control=bbr#$(costom_name)" >> list.txt
