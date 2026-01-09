@@ -9,11 +9,10 @@ const { Buffer } = require('buffer');
 const { exec, execSync } = require('child_process');
 const { WebSocket, createWebSocketStream } = require('ws');
 const UUID = process.env.UUID || '5efabea4-f6d4-91fd-b8f0-17e004c89c60';     
-const DOMAIN = process.env.DOMAIN || '1234.abc.com';    
-const AUTO_ACCESS = process.env.AUTO_ACCESS || false;    
+const DOMAIN = process.env.DOMAIN || 'www.abc.com';      
 const WSPATH = process.env.WSPATH || encodeURIComponent(`api/v1/user?token=${UUID.slice(0, 8)}&lang=en`);
 const SUB_PATH = process.env.SUB_PATH || 'sub';          
-const NAME = process.env.NAME || '';                    
+const NAME = process.env.NAME || 'guppy';                    
 const PORT = process.env.PORT || 3000;                     
 
 let ISP = '';
