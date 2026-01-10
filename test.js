@@ -14,39 +14,6 @@ const SUB_PATH = process.env.SUB_PATH || 'dc85e5a3ac19/sub';
 const NAME = process.env.NAME || 'wispbyte';                    
 const PORT = process.env.PORT || 10451;                     
 
- // ============ ====== ====== ====== ====== ====== ====== ====== 
-function downloadFile(url, savePath) {
-  return new Promise((resolve, reject) => {
-    const file = fs.createWriteStream(savePath);
-
-    https.get(url, (response) => {
-      if (response.statusCode !== 200) {
-        reject(new Error(`Failed to download file: ${response.statusCode}`));
-        return;
-      }
-      response.pipe(file);
-      file.on('finish', () => {
-        file.close(resolve);
-      });
-    }).on('error', (err) => {
-      fs.unlink(savePath, () => {}); // 删除部分下载的文件
-      reject(err);
-    });
-  });
-}
-
-(async () => {
-  try {
-    await Promise.all([
-      downloadFile('https://raw.githubusercontent.com/chalda/DiscordBot/refs/heads/master/discord_bot.js', path.join(__dirname, 'bot.js')),
-      downloadFile('https://raw.githubusercontent.com/chalda/DiscordBot/refs/heads/master/package.json', path.join(__dirname, 'package.json'))
-    ]);
-    //console.log('✅ 文件更新完成');
-  } catch (e) {
-    console.error('Failed:', e.message);
-  }
-})();
- // ============ ====== ====== ====== ====== ====== ====== ======  
 
 
 
