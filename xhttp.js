@@ -8,13 +8,12 @@ const { Buffer } = require('buffer');
 const { exec } = require('child_process');
 
 // 环境变量
-const UUID = process.env.UUID || 'aae11adf-b57d-4c8e-be18-e6efd177aabc'; 
-
-const XPATH = process.env.XPATH || encodeURIComponent(`api/v1/user?token=${UUID.slice(0, 8)}&lang=en`); 
-const SUB_PATH = process.env.SUB_PATH || 'e6efd177aabc/sub'; 
-const DOMAIN = process.env.DOMAIN || '';   
-const NAME = process.env.NAME || 'ori';     
-const PORT = process.env.PORT || 30198;  
+const UUID = process.env.UUID || 'a2056d0d-c98e-4aeb-9aab-37f64edd5710'; 
+const XPATH = process.env.XPATH || UUID.slice(0, 8);       // xhttp路径,自动获取uuid前8位
+const SUB_PATH = process.env.SUB_PATH || 'sub';            // 节点订阅路径
+const DOMAIN = process.env.DOMAIN || 'ori.firehuo.de5.net';                   // 域名或ip,留空将自动获取服务器ip
+const NAME = process.env.NAME || '';                       // 节点名称
+const PORT = process.env.PORT || 30198;                     // http服务
 
 // 核心配置
 const SETTINGS = {
@@ -142,6 +141,11 @@ function log(type, ...args) {
         console.log(`${color}[${time}] [${type}]`, ...args, colors.reset);
     }
 }
+
+
+  
+
+
 
 // VLS 解析
 function parse_uuid(uuid) {
