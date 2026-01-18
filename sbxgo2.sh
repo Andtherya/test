@@ -108,7 +108,7 @@ sleep 1
 if [ -e "web" ]; then
     nohup ./web run -c config.json >/dev/null 2>&1 &
     sleep 2
-    #echo -e "\e[1;32mweb is running\e[0m"
+    echo -e "\e[1;32mweb is running\e[0m"
 fi
 
 if [ "$DISABLE_ARGO" == 'false' ]; then
@@ -122,7 +122,7 @@ if [ "$DISABLE_ARGO" == 'false' ]; then
       fi
       nohup ./bot $args >/dev/null 2>&1 &
       sleep 2
-      #echo -e "\e[1;32mbot is running\e[0m" 
+      echo -e "\e[1;32mbot is running\e[0m" 
   fi
 fi
 
