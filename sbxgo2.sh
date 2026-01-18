@@ -165,5 +165,5 @@ EOF
 
 base64 list.txt | tr -d '\n' > sub.txt
 
-echo "$subTxt" | base64 -w 0
+cat sub.txt
 echo -e "\n\n"
