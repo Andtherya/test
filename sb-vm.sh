@@ -1,5 +1,5 @@
 #!/bin/bash
-
+#argo加vm，出站流量走warp
 export UUID="${UUID:-5861ed67-f4ae-4e02-868e-9cea7d2d5a9e}"
 export ARGO_DOMAIN="${ARGO_DOMAIN:-}"
 export ARGO_AUTH="${ARGO_AUTH:-}"
