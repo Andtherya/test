@@ -9,6 +9,9 @@ export CFPORT="${CFPORT:-443}"
 export NAME="${NAME:-Vls}"
 export DISABLE_ARGO=${DISABLE_ARGO:-'false'} 
 
+pkill web
+pkill bot
+
 rm -rf tmp
 
 mkdir -p "./tmp"
