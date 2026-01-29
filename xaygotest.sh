@@ -1,13 +1,13 @@
 #!/bin/bash
 
-UUID="${UUID:-5861ed67-f4ae-4e02-868e-9cea7d2d5a9e}"
-ARGO_DOMAIN="${ARGO_DOMAIN:-}"
-ARGO_AUTH="${ARGO_AUTH:-}"
-ARGO_PORT="${ARGO_PORT:-35568}"
-CFIP="${CFIP:-www.visa.com.sg}"
-CFPORT="${CFPORT:-443}"
-NAME="${NAME:-Vls}"
-VLPORT="${VLPORT:-3001}"
+export UUID="${UUID:-5861ed67-f4ae-4e02-868e-9cea7d2d5a9e}"
+export ARGO_DOMAIN="${ARGO_DOMAIN:-}"
+export ARGO_AUTH="${ARGO_AUTH:-}"
+export ARGO_PORT="${ARGO_PORT:-35568}"
+export CFIP="${CFIP:-www.visa.com.sg}"
+export CFPORT="${CFPORT:-443}"
+export NAME="${NAME:-Vls}"
+export VLPORT="${VLPORT:-3001}"
 
 pkill bot
 pkill web
