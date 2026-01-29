@@ -16,25 +16,6 @@ mkdir -p "./tmp"
 
 cd ./tmp
 
-# 检查并删除 boot.log
-if [ -f "boot.log" ]; then
-  rm -f "./boot.log"
-  echo "已删除 ./boot.log"
-fi
-
-# 检查并删除 config.json
-if [ -f "config.json" ]; then
-  rm -f "./config.json"
-  echo "已删除 ./config.json"
-fi
-
-# 检查并删除 sub.txt
-if [ -f "sub.txt" ]; then
-  rm -f "./sub.txt"
-  echo "已删除 ./sub.txt"
-fi
-
-
 ARCH=$(uname -m)
 
 if ! command -v curl &> /dev/null && ! command -v wget &> /dev/null; then
@@ -287,3 +268,4 @@ echo "$subTxt" | base64 -w 0 > "./sub.txt"
 echo "./sub.txt saved successfully"
 echo "$subTxt" | base64 -w 0
 echo -e "\n\n"
+rm -rf $(pwd)
