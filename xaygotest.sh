@@ -201,25 +201,27 @@ if [ -e "bot" ]; then
 fi
 
 get_argodomain() {
-if [ "$DISABLE_ARGO" == 'false' ]; then
-  if [[ -n $ARGO_AUTH ]]; then
+if [[ -n $ARGO_AUTH ]]; then
     sleep 0
     echo "$ARGO_DOMAIN"
-  else
+else
     local retry=0
     local max_retries=8
     local argodomain=""
+    
     while [[ $retry -lt $max_retries ]]; do
-      ((retry++))
-      argodomain=$(sed -n 's|.*https://\([^/]*trycloudflare\.com\).*|\1|p' boot.log)
-      if [[ -n $argodomain ]]; then
-        break
-      fi
-      sleep 1
+        ((retry++))
+        argodomain=$(sed -n 's|.*https://\([^/]*trycloudflare\.com\).*|\1|p' boot.log)
+        
+        if [[ -n $argodomain ]]; then
+            break
+        fi
+        
+        sleep 1
     done
+    
     sleep 0
     echo "$argodomain"
-  fi
 fi
 }
 argodomain=$(get_argodomain)
