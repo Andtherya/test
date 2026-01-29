@@ -11,10 +11,11 @@ export VLPORT="${VLPORT:-3001}"
 
 pkill bot
 pkill web
+rm -rf tmp
 
-mkdir tmp
+mkdir -p "./tmp"
 
-cd tmp
+cd ./tmp
 
 ARCH=$(uname -m)
 
