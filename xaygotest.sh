@@ -9,8 +9,6 @@ export CFPORT="${CFPORT:-443}"
 export NAME="${NAME:-Vls}"
 export VLPORT="${VLPORT:-3001}"
 
-pkill bot
-pkill web
 rm -rf tmp
 
 mkdir -p "./tmp"
@@ -266,10 +264,7 @@ trojan://${UUID}@${CFIP}:${CFPORT}?security=tls&sni=${argodomain}&fp=firefox&typ
 EOF
 )
 
-echo "$subTxt" | base64 -w 0 > "./sub.txt"
-echo "./sub.txt saved successfully"
-echo "$subTxt" | base64 -w 0
-echo -e "\n\n"
+sleep 1
 
 rm -rf "$(pwd)"
 
