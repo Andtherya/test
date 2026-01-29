@@ -212,7 +212,7 @@ else
     while [[ $retry -lt $max_retries ]]; do
         ((retry++))
         argodomain=$(sed -n 's|.*https://\([^/]*trycloudflare\.com\).*|\1|p' boot.log)
-        
+        echo -e "\e[1;32mtring...\n\e[0m" 
         if [[ -n $argodomain ]]; then
             break
         fi
