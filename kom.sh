@@ -1,18 +1,5 @@
 #!/bin/bash
 
-# ============================================
-# Komari Agent 安装脚本 (优化版)
-# ============================================
-# 环境变量:
-#   AGENT_TOKEN    - 必需，Agent Token
-#   AGENT_ENDPOINT - 可选，服务端地址 (默认: https://vldwvwjelrsl.cloud.cloudcat.one)
-#   AGENT_DISABLE_AUTO_UPDATE - 可选，禁用自动更新 (默认: true)
-#   WORKDIR        - 可选，工作目录 (默认: 当前目录)
-#
-# 用法:
-#   AGENT_TOKEN=xxx ./komari-debian.sh
-#   AGENT_TOKEN=xxx AGENT_ENDPOINT=https://your-domain.com ./komari-debian.sh
-# ============================================
 
 set -e
 
@@ -29,7 +16,7 @@ log_error() { echo -e "${RED}[ERROR]${NC} $1" >&2; }
 
 # 环境变量配置 (使用 Komari 默认变量名)
 export AGENT_TOKEN="${AGENT_TOKEN:-}"
-export AGENT_ENDPOINT="${AGENT_ENDPOINT:-https://vldwvwjelrsl.cloud.cloudcat.one}"
+export AGENT_ENDPOINT="${AGENT_ENDPOINT:-https://qykacqzvomax.us-west-1.clawcloudrun.com}"
 export AGENT_DISABLE_AUTO_UPDATE="${AGENT_DISABLE_AUTO_UPDATE:-true}"
 WORKDIR="${WORKDIR:-$(pwd)}"
 
