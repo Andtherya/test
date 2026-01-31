@@ -1,5 +1,17 @@
 #!/bin/bash
 
+# ============================================
+# Komari Agent 安装脚本 (优化版)
+# ============================================
+# 环境变量:
+#   AGENT_TOKEN    - 必需，Agent Token
+#   AGENT_DISABLE_AUTO_UPDATE - 可选，禁用自动更新 (默认: true)
+#   WORKDIR        - 可选，工作目录 (默认: 当前目录)
+#
+# 用法:
+#   AGENT_TOKEN=xxx ./komari-debian.sh
+#   AGENT_TOKEN=xxx AGENT_ENDPOINT=https://your-domain.com ./komari-debian.sh
+# ============================================
 
 set -e
 
@@ -61,6 +73,19 @@ detect_downloader() {
     fi
 }
 
+# 检测 init 系统
+detect_init() {
+    if command -v systemctl &>/dev/null && [ -d "/etc/systemd/system" ]; then
+        echo "systemd"
+    elif command -v rc-service &>/dev/null; then
+        echo "openrc"
+    elif [ -d "/etc/init.d" ]; then
+        echo "sysvinit"
+    else
+        echo "none"
+    fi
+}
+
 # 下载文件
 download_file() {
     local url="$1"
@@ -79,6 +104,154 @@ download_file() {
     esac
 }
 
+# 安装 systemd 服务
+install_systemd() {
+    local agent_path="$1"
+    log_info "创建 systemd 服务..."
+    cat >/etc/systemd/system/komari-agent.service <<EOF
+[Unit]
+Description=Komari Agent Service
+After=network.target
+
+[Service]
+WorkingDirectory=${WORKDIR}
+Environment="AGENT_TOKEN=${AGENT_TOKEN}"
+Environment="AGENT_ENDPOINT=${AGENT_ENDPOINT}"
+Environment="AGENT_DISABLE_AUTO_UPDATE=${AGENT_DISABLE_AUTO_UPDATE}"
+ExecStart=${agent_path}
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+    
+    systemctl daemon-reload
+    systemctl enable komari-agent
+    systemctl restart komari-agent
+}
+
+# 安装 OpenRC 服务
+install_openrc() {
+    local agent_path="$1"
+    log_info "创建 OpenRC 服务..."
+    cat >/etc/init.d/komari-agent <<EOF
+#!/sbin/openrc-run
+
+name="komari-agent"
+description="Komari Agent Service"
+command="${agent_path}"
+command_background=true
+pidfile="/run/\${RC_SVCNAME}.pid"
+output_log="/var/log/komari-agent.log"
+error_log="/var/log/komari-agent.log"
+
+export AGENT_TOKEN="${AGENT_TOKEN}"
+export AGENT_ENDPOINT="${AGENT_ENDPOINT}"
+export AGENT_DISABLE_AUTO_UPDATE="${AGENT_DISABLE_AUTO_UPDATE}"
+
+depend() {
+    need net
+}
+EOF
+    chmod +x /etc/init.d/komari-agent
+    rc-update add komari-agent default
+    rc-service komari-agent restart
+}
+
+# 安装 SysVinit 服务
+install_sysvinit() {
+    local agent_path="$1"
+    log_info "创建 SysVinit 服务..."
+    cat >/etc/init.d/komari-agent <<'OUTER'
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:          komari-agent
+# Required-Start:    $network $remote_fs
+# Required-Stop:     $network $remote_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Komari Agent Service
+### END INIT INFO
+
+OUTER
+    cat >>/etc/init.d/komari-agent <<EOF
+AGENT_PATH="${agent_path}"
+WORKDIR="${WORKDIR}"
+PIDFILE="/var/run/komari-agent.pid"
+LOGFILE="/var/log/komari-agent.log"
+
+export AGENT_TOKEN="${AGENT_TOKEN}"
+export AGENT_ENDPOINT="${AGENT_ENDPOINT}"
+export AGENT_DISABLE_AUTO_UPDATE="${AGENT_DISABLE_AUTO_UPDATE}"
+
+start() {
+    if [ -f "\$PIDFILE" ] && kill -0 \$(cat "\$PIDFILE") 2>/dev/null; then
+        echo "komari-agent is already running"
+        return 1
+    fi
+    echo "Starting komari-agent..."
+    cd "\$WORKDIR"
+    nohup "\$AGENT_PATH" >>"\$LOGFILE" 2>&1 &
+    echo \$! > "\$PIDFILE"
+    echo "Started"
+}
+
+stop() {
+    if [ ! -f "\$PIDFILE" ]; then
+        echo "komari-agent is not running"
+        return 1
+    fi
+    echo "Stopping komari-agent..."
+    kill \$(cat "\$PIDFILE") 2>/dev/null
+    rm -f "\$PIDFILE"
+    echo "Stopped"
+}
+
+status() {
+    if [ -f "\$PIDFILE" ] && kill -0 \$(cat "\$PIDFILE") 2>/dev/null; then
+        echo "komari-agent is running (PID: \$(cat \$PIDFILE))"
+    else
+        echo "komari-agent is not running"
+    fi
+}
+
+case "\$1" in
+    start)   start ;;
+    stop)    stop ;;
+    restart) stop; sleep 1; start ;;
+    status)  status ;;
+    *)       echo "Usage: \$0 {start|stop|restart|status}"; exit 1 ;;
+esac
+EOF
+    chmod +x /etc/init.d/komari-agent
+    
+    # 尝试添加到启动项
+    if command -v update-rc.d &>/dev/null; then
+        update-rc.d komari-agent defaults
+    elif command -v chkconfig &>/dev/null; then
+        chkconfig --add komari-agent
+        chkconfig komari-agent on
+    fi
+    
+    /etc/init.d/komari-agent restart
+}
+
+# 使用 nohup 后台运行 (兜底方案)
+install_nohup() {
+    local agent_path="$1"
+    log_warn "未检测到支持的 init 系统，使用 nohup 后台运行"
+    
+    # 停止已有进程
+    pkill -f "komari-agent" 2>/dev/null || true
+    
+    cd "${WORKDIR}"
+    nohup "${agent_path}" >>/var/log/komari-agent.log 2>&1 &
+    
+    log_info "进程已启动 (PID: $!)"
+    log_warn "注意: 系统重启后需要手动启动"
+}
+
 # 主逻辑
 main() {
     log_info "开始安装 Komari Agent..."
@@ -86,6 +259,10 @@ main() {
     # 检测架构
     local arch=$(detect_arch)
     log_info "检测到系统架构: $arch"
+    
+    # 检测 init 系统
+    local init_system=$(detect_init)
+    log_info "检测到 init 系统: $init_system"
     
     # 构建下载 URL
     local download_url="${BASE_URL}/komari-agent-linux-${arch}"
@@ -106,39 +283,28 @@ main() {
         log_info "下载完成"
     fi
     
-    # 创建 systemd 服务文件 (使用环境变量传参)
-    log_info "创建 systemd 服务..."
-    cat >/etc/systemd/system/komari-agent.service <<EOF
-[Unit]
-Description=Komari Agent Service
-After=network.target
-
-[Service]
-WorkingDirectory=${WORKDIR}
-Environment="AGENT_TOKEN=${AGENT_TOKEN}"
-Environment="AGENT_ENDPOINT=${AGENT_ENDPOINT}"
-Environment="AGENT_DISABLE_AUTO_UPDATE=${AGENT_DISABLE_AUTO_UPDATE}"
-ExecStart=${agent_path}
-Restart=always
-RestartSec=5
-
-[Install]
-WantedBy=multi-user.target
-EOF
+    # 根据 init 系统安装服务
+    case "$init_system" in
+        systemd)
+            install_systemd "$agent_path"
+            ;;
+        openrc)
+            install_openrc "$agent_path"
+            ;;
+        sysvinit)
+            install_sysvinit "$agent_path"
+            ;;
+        *)
+            install_nohup "$agent_path"
+            ;;
+    esac
     
-    # 启动服务
-    log_info "启动服务..."
-    systemctl daemon-reload
-    systemctl enable komari-agent
-    systemctl restart komari-agent
-    
-    # 检查服务状态
+    # 检查进程状态
     sleep 2
-    if systemctl is-active --quiet komari-agent; then
+    if pgrep -f "komari-agent" >/dev/null; then
         log_info "Komari Agent 安装成功并已启动!"
-        log_info "服务状态: $(systemctl is-active komari-agent)"
     else
-        log_warn "服务可能未正常启动，请检查: systemctl status komari-agent"
+        log_warn "服务可能未正常启动，请检查日志"
     fi
     
     echo ""
@@ -147,7 +313,6 @@ EOF
     echo "  - AGENT_ENDPOINT: ${AGENT_ENDPOINT}"
     echo "  - AGENT_DISABLE_AUTO_UPDATE: ${AGENT_DISABLE_AUTO_UPDATE}"
     echo "  - 架构: ${arch}"
+    echo "  - Init 系统: ${init_system}"
     echo "  - 工作目录: ${WORKDIR}"
 }
-
-main
