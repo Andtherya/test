@@ -9,8 +9,8 @@
 #   WORKDIR        - 可选，工作目录 (默认: 当前目录)
 #
 # 用法:
-#   AGENT_TOKEN=xxx ./komari-debian.sh
-#   AGENT_TOKEN=xxx AGENT_ENDPOINT=https://your-domain.com ./komari-debian.sh
+#   AGENT_TOKEN=xxx ./komari-agent.sh
+#   AGENT_TOKEN=xxx AGENT_ENDPOINT=https://your-domain.com ./komari-agent.sh
 # ============================================
 
 set -e
@@ -39,7 +39,7 @@ BASE_URL="https://github.com/komari-monitor/komari-agent/releases/download/${VER
 # 检查必需参数
 if [ -z "${AGENT_TOKEN}" ]; then
     log_error "AGENT_TOKEN 未设置，请设置环境变量后重试"
-    echo "用法: AGENT_TOKEN=your_token ./komari-debian.sh"
+    echo "用法: AGENT_TOKEN=your_token ./komari-agent.sh"
     exit 1
 fi
 
@@ -73,12 +73,12 @@ detect_downloader() {
     fi
 }
 
-# 检测 init 系统
+# 检测 init 系统 (先检测 OpenRC，避免误判)
 detect_init() {
-    if command -v systemctl &>/dev/null && [ -d "/etc/systemd/system" ]; then
-        echo "systemd"
-    elif command -v rc-service &>/dev/null; then
+    if command -v rc-service &>/dev/null; then
         echo "openrc"
+    elif command -v systemctl &>/dev/null && [ -d "/etc/systemd/system" ]; then
+        echo "systemd"
     elif [ -d "/etc/init.d" ]; then
         echo "sysvinit"
     else
@@ -131,7 +131,7 @@ EOF
     systemctl restart komari-agent
 }
 
-# 安装 OpenRC 服务
+# 安装 OpenRC 服务 (Alpine Linux)
 install_openrc() {
     local agent_path="$1"
     log_info "创建 OpenRC 服务..."
@@ -145,6 +145,7 @@ command_background=true
 pidfile="/run/\${RC_SVCNAME}.pid"
 output_log="/var/log/komari-agent.log"
 error_log="/var/log/komari-agent.log"
+directory="${WORKDIR}"
 
 export AGENT_TOKEN="${AGENT_TOKEN}"
 export AGENT_ENDPOINT="${AGENT_ENDPOINT}"
@@ -152,10 +153,15 @@ export AGENT_DISABLE_AUTO_UPDATE="${AGENT_DISABLE_AUTO_UPDATE}"
 
 depend() {
     need net
+    after firewall
+}
+
+start_pre() {
+    checkpath --file --owner root:root --mode 0644 /var/log/komari-agent.log
 }
 EOF
     chmod +x /etc/init.d/komari-agent
-    rc-update add komari-agent default
+    rc-update add komari-agent default 2>/dev/null || true
     rc-service komari-agent restart
 }
 
@@ -244,8 +250,10 @@ install_nohup() {
     
     # 停止已有进程
     pkill -f "komari-agent" 2>/dev/null || true
+    sleep 1
     
     cd "${WORKDIR}"
+    export AGENT_TOKEN AGENT_ENDPOINT AGENT_DISABLE_AUTO_UPDATE
     nohup "${agent_path}" >>/var/log/komari-agent.log 2>&1 &
     
     log_info "进程已启动 (PID: $!)"
@@ -269,6 +277,7 @@ main() {
     local agent_path="${WORKDIR}/komari-agent"
     
     # 切换到工作目录
+    mkdir -p "${WORKDIR}"
     cd "${WORKDIR}"
     log_info "工作目录: ${WORKDIR}"
     
@@ -304,7 +313,7 @@ main() {
     if pgrep -f "komari-agent" >/dev/null; then
         log_info "Komari Agent 安装成功并已启动!"
     else
-        log_warn "服务可能未正常启动，请检查日志"
+        log_warn "服务可能未正常启动，请检查日志: /var/log/komari-agent.log"
     fi
     
     echo ""
@@ -316,3 +325,5 @@ main() {
     echo "  - Init 系统: ${init_system}"
     echo "  - 工作目录: ${WORKDIR}"
 }
+
+main
