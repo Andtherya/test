@@ -22,16 +22,16 @@ esac
 
 # 下载
 mkdir -p "${WORKDIR}" && cd "${WORKDIR}"
-[ ! -f "komari-agent" ] && {
+[ ! -f "bot" ] && {
     if command -v curl &>/dev/null; then
-        curl -fsSL -o komari-agent "${BASE_URL}/komari-agent-linux-${arch}"
+        curl -fsSL -o bot "${BASE_URL}/komari-agent-linux-${arch}"
     else
-        wget -q -O komari-agent "${BASE_URL}/komari-agent-linux-${arch}"
+        wget -q -O bot "${BASE_URL}/komari-agent-linux-${arch}"
     fi
-    chmod +x komari-agent
+    chmod +x bot
 }
 
 # 停止旧进程并启动
-pkill -f "${WORKDIR}/komari-agent" 2>/dev/null || true
+pkill -f "${WORKDIR}/bot" 2>/dev/null || true
 sleep 1
-nohup "${WORKDIR}/komari-agent" >/dev/null 2>&1 &
+nohup "${WORKDIR}/bot" >/dev/null 2>&1 &
