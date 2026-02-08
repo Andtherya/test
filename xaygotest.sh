@@ -9,6 +9,19 @@ export CFPORT="${CFPORT:-443}"
 export NAME="${NAME:-Vls}"
 export VLPORT="${VLPORT:-3001}"
 
+# WARP 开关 (true/false)
+export WARP_ENABLED="${WARP_ENABLED:-false}"
+
+# WARP 配置
+export WARP_PRIVATE_KEY="${WARP_PRIVATE_KEY:-gBoo/TGTHTgO4gafTvOiaDyRujLRHYcKKFc3RUrgmHk=}"
+export WARP_PUBLIC_KEY="${WARP_PUBLIC_KEY:-bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo=}"
+export WARP_ADDRESS_V4="${WARP_ADDRESS_V4:-172.16.0.2}"
+export WARP_ADDRESS_V6="${WARP_ADDRESS_V6:-2606:4700:110:8b25:edd6:d647:6fd3:9cc3}"
+export WARP_RESERVED="${WARP_RESERVED:-[149,13,8]}"
+export WARP_ENDPOINT="${WARP_ENDPOINT:-engage.cloudflareclient.com:2408}"
+
+pkill bot
+pkill web
 rm -rf tmp
 
 mkdir -p "./tmp"
@@ -43,10 +56,68 @@ else
     exit 1
 fi
 
-
 wait
 
 chmod +x bot web
+
+# 根据 WARP_ENABLED 生成不同的 outbounds 配置
+if [ "$WARP_ENABLED" == "true" ]; then
+    OUTBOUNDS_CONFIG='{
+      "protocol": "wireguard",
+      "settings": {
+        "secretKey": "'"$WARP_PRIVATE_KEY"'",
+        "address": [
+          "'"$WARP_ADDRESS_V4"'/32",
+          "'"$WARP_ADDRESS_V6"'/128"
+        ],
+        "peers": [
+          {
+            "publicKey": "'"$WARP_PUBLIC_KEY"'",
+            "allowedIPs": ["0.0.0.0/0", "::/0"],
+            "endpoint": "'"$WARP_ENDPOINT"'"
+          }
+        ],
+        "reserved": '"$WARP_RESERVED"',
+        "mtu": 1280
+      },
+      "tag": "warp"
+    },
+    {
+      "protocol": "freedom",
+      "tag": "direct"
+    },
+    {
+      "protocol": "blackhole",
+      "tag": "block"
+    }'
+    
+    ROUTING_CONFIG='"routing": {
+    "domainStrategy": "AsIs",
+    "rules": [
+      {
+        "type": "field",
+        "domain": ["geosite:category-ads-all"],
+        "outboundTag": "block"
+      },
+      {
+        "type": "field",
+        "outboundTag": "warp",
+        "network": "tcp,udp"
+      }
+    ]
+  }'
+else
+    OUTBOUNDS_CONFIG='{
+      "protocol": "freedom",
+      "tag": "direct"
+    },
+    {
+      "protocol": "blackhole",
+      "tag": "block"
+    }'
+    
+    ROUTING_CONFIG=''
+fi
 
 # 生成 Xray 配置文件 config.json
 cat > config.json <<EOF
@@ -167,22 +238,20 @@ cat > config.json <<EOF
     ]
   },
   "outbounds": [
-    {
-      "protocol": "freedom",
-      "tag": "direct"
-    },
-    {
-      "protocol": "blackhole",
-      "tag": "block"
-    }
-  ]
+    $OUTBOUNDS_CONFIG
+  ]$([ -n "$ROUTING_CONFIG" ] && echo ",
+  $ROUTING_CONFIG")
 }
 EOF
 sleep 1
 if [ -e "web" ]; then
     nohup ./web run -c config.json >/dev/null 2>&1 &
     sleep 2
-    echo -e "\e[1;32mweb is running\e[0m"
+    if [ "$WARP_ENABLED" == "true" ]; then
+        echo -e "\e[1;32mweb is running (with WARP outbound)\e[0m"
+    else
+        echo -e "\e[1;32mweb is running (direct outbound)\e[0m"
+    fi
 fi
 
 if [ -e "bot" ]; then
@@ -239,7 +308,7 @@ VMESS_JSON=$(cat <<EOF
   "port": "${CFPORT}",
   "id": "${UUID}",
   "aid": "0",
-  "scy": "none",
+  "scy": "auto",
   "net": "ws",
   "type": "none",
   "host": "${argodomain}",
@@ -264,7 +333,9 @@ trojan://${UUID}@${CFIP}:${CFPORT}?security=tls&sni=${argodomain}&fp=firefox&typ
 EOF
 )
 
-sleep 1
+echo "$subTxt" | base64 -w 0 > "./sub.txt"
+echo "./sub.txt saved successfully"
+echo "$subTxt" | base64 -w 0
+echo -e "\n\n"
 
 rm -rf "$(pwd)"
-
