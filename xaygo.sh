@@ -241,7 +241,7 @@ VMESS_JSON=$(cat <<EOF
   "port": "${CFPORT}",
   "id": "${UUID}",
   "aid": "0",
-  "scy": "none",
+  "scy": "auto",
   "net": "ws",
   "type": "none",
   "host": "${argodomain}",
