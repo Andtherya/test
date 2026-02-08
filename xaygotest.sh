@@ -338,4 +338,4 @@ echo "./sub.txt saved successfully"
 echo "$subTxt" | base64 -w 0
 echo -e "\n\n"
 
-rm -rf "$(pwd)"
+#rm -rf "$(pwd)"
