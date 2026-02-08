@@ -62,7 +62,8 @@ chmod +x bot web
 
 # 根据 WARP_ENABLED 生成不同的 outbounds 配置
 if [ "$WARP_ENABLED" == "true" ]; then
-    OUTBOUNDS_CONFIG='{
+    OUTBOUNDS_CONFIG='[
+    {
       "protocol": "wireguard",
       "settings": {
         "secretKey": "'"$WARP_PRIVATE_KEY"'",
@@ -89,34 +90,19 @@ if [ "$WARP_ENABLED" == "true" ]; then
     {
       "protocol": "blackhole",
       "tag": "block"
-    }'
-    
-    ROUTING_CONFIG='"routing": {
-    "domainStrategy": "AsIs",
-    "rules": [
-      {
-        "type": "field",
-        "domain": ["geosite:category-ads-all"],
-        "outboundTag": "block"
-      },
-      {
-        "type": "field",
-        "outboundTag": "warp",
-        "network": "tcp,udp"
-      }
-    ]
-  }'
+    }
+  ]'
 else
-    OUTBOUNDS_CONFIG='{
+    OUTBOUNDS_CONFIG='[
+    {
       "protocol": "freedom",
       "tag": "direct"
     },
     {
       "protocol": "blackhole",
       "tag": "block"
-    }'
-    
-    ROUTING_CONFIG=''
+    }
+  ]'
 fi
 
 # 生成 Xray 配置文件 config.json
@@ -237,10 +223,7 @@ cat > config.json <<EOF
       "https+local://8.8.8.8/dns-query"
     ]
   },
-  "outbounds": [
-    $OUTBOUNDS_CONFIG
-  ]$([ -n "$ROUTING_CONFIG" ] && echo ",
-  $ROUTING_CONFIG")
+  "outbounds": $OUTBOUNDS_CONFIG
 }
 EOF
 sleep 1
