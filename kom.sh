@@ -43,8 +43,7 @@ if [ -z "${AGENT_TOKEN}" ]; then
     exit 1
 fi
 
-mkdir kom
-cd kom
+
 
 # 检测系统架构
 detect_arch() {
