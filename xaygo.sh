@@ -246,6 +246,7 @@ protocol: http2
 edge-ip-version: auto
 no-autoupdate: true
 EOF
+        nohup ./bot tunnel --config config.yml run >/dev/null 2>&1 &
     else
         cat > config.yml <<EOF
 url: http://localhost:${ARGO_PORT}
@@ -255,9 +256,9 @@ no-autoupdate: true
 logfile: boot.log
 loglevel: info
 EOF
+        nohup ./bot --config config.yml >/dev/null 2>&1 &
     fi
     
-    nohup ./bot tunnel --config config.yml run >/dev/null 2>&1 &
     sleep 2
     echo -e "\e[1;32mbot is running\e[0m" 
 fi
