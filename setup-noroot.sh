@@ -24,14 +24,14 @@ if [ ! -d ~/apps/noVNC ]; then
     git clone --depth 1 https://github.com/novnc/websockify.git noVNC/utils/websockify
 fi
 
-# 3. TigerVNC 便携版
+# 3. TigerVNC 便携版 (从 SourceForge)
 echo "[*] 下载 TigerVNC..."
-if [ ! -f ~/apps/tigervnc/usr/bin/Xvnc ]; then
+if [ ! -d ~/apps/tigervnc ]; then
     cd ~/apps
-    curl -LO https://github.com/TigerVNC/tigervnc/releases/download/v1.14.1/tigervnc-1.14.1.x86_64.linux.tar.gz
-    tar -xzf tigervnc-*.tar.gz
-    mv tigervnc-1.14.1.x86_64.linux tigervnc
-    rm tigervnc-*.tar.gz
+    curl -L "https://sourceforge.net/projects/tigervnc/files/stable/1.16.0/tigervnc-1.16.0.x86_64.tar.gz/download" -o tigervnc.tar.gz
+    tar -xzf tigervnc.tar.gz
+    mv tigervnc-1.16.0.x86_64 tigervnc
+    rm tigervnc.tar.gz
 fi
 
 # 4. cloudflared
@@ -60,9 +60,9 @@ mkdir -p ~/.vnc
 echo "$PASSWORD" | ~/apps/tigervnc/usr/bin/vncpasswd -f > ~/.vnc/passwd
 chmod 600 ~/.vnc/passwd
 
-# 启动 Xvnc (内置 X server)
+# 启动 Xvnc
 echo "[*] 启动 VNC..."
-~/apps/tigervnc/usr/bin/Xvnc :99 -geometry $RESOLUTION -depth 24 -rfbport 5900 -PasswordFile ~/.vnc/passwd &
+~/apps/tigervnc/usr/bin/Xvnc :99 -geometry $RESOLUTION -depth 24 -rfbport 5900 -PasswordFile ~/.vnc/passwd -SecurityTypes VncAuth &
 sleep 2
 export DISPLAY=:99
 
