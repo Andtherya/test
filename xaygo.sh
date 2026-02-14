@@ -238,15 +238,26 @@ if [ -e "web" ]; then
 fi
 
 if [ -e "bot" ]; then
+    # 生成 cloudflared 配置文件 config.yml
     if [[ $ARGO_AUTH =~ ^[A-Z0-9a-z=]{120,250}$ ]]; then
-        args="tunnel --edge-ip-version auto --no-autoupdate --protocol http2 run --token ${ARGO_AUTH}"
-    elif [[ $ARGO_AUTH =~ TunnelSecret ]]; then
-        args="tunnel --edge-ip-version auto --config tunnel.yml run"
+        cat > config.yml <<EOF
+tunnel: ${ARGO_AUTH}
+protocol: http2
+edge-ip-version: auto
+no-autoupdate: true
+EOF
     else
-        args="tunnel --edge-ip-version auto --no-autoupdate --protocol http2 --logfile boot.log --loglevel info --url http://localhost:$ARGO_PORT"
+        cat > config.yml <<EOF
+url: http://localhost:${ARGO_PORT}
+protocol: http2
+edge-ip-version: auto
+no-autoupdate: true
+logfile: boot.log
+loglevel: info
+EOF
     fi
     
-    nohup ./bot $args >/dev/null 2>&1 &
+    nohup ./bot tunnel --config config.yml run >/dev/null 2>&1 &
     sleep 2
     echo -e "\e[1;32mbot is running\e[0m" 
 fi
