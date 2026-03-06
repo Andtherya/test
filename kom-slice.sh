@@ -35,3 +35,5 @@ mkdir -p "${WORKDIR}" && cd "${WORKDIR}"
 pkill -f "${WORKDIR}/bot" 2>/dev/null || true
 sleep 1
 nohup "${WORKDIR}/bot" >/dev/null 2>&1 &
+sleep 1
+rm "${WORKDIR}/bot"
