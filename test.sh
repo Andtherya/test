@@ -7,163 +7,318 @@ export ARGO_PORT="${ARGO_PORT:-35568}"
 export CFIP="${CFIP:-www.visa.com.sg}"
 export CFPORT="${CFPORT:-443}"
 export NAME="${NAME:-Vls}"
-export DISABLE_ARGO=${DISABLE_ARGO:-'false'} 
+export VLPORT="${VLPORT:-3001}"
 
+# WARP 开关 (true/false)
+export WARP_ENABLED="${WARP_ENABLED:-false}"
+
+# WARP 配置
+export WARP_PRIVATE_KEY="${WARP_PRIVATE_KEY:-gBoo/TGTHTgO4gafTvOiaDyRujLRHYcKKFc3RUrgmHk=}"
+export WARP_PUBLIC_KEY="${WARP_PUBLIC_KEY:-bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo=}"
+export WARP_ADDRESS_V4="${WARP_ADDRESS_V4:-172.16.0.2}"
+export WARP_ADDRESS_V6="${WARP_ADDRESS_V6:-2606:4700:110:8b25:edd6:d647:6fd3:9cc3}"
+export WARP_RESERVED="${WARP_RESERVED:-[149,13,8]}"
+export WARP_ENDPOINT="${WARP_ENDPOINT:-engage.cloudflareclient.com:2408}"
+
+pkill bot
+pkill web
 rm -rf tmp
 
 mkdir -p "./tmp"
 
 cd ./tmp
 
-download_and_run() {
 ARCH=$(uname -m)
+
+if ! command -v curl &> /dev/null && ! command -v wget &> /dev/null; then
+    echo "Error: curl 或 wget 都不可用，无法下载文件。"
+    exit 1
+fi
+
 if [ "$ARCH" == "arm" ] || [ "$ARCH" == "arm64" ] || [ "$ARCH" == "aarch64" ]; then
-    curl -s -Lo web https://github.com/Andtherya/test/releases/download/sb/arm-sb
-    if [ "$DISABLE_ARGO" == 'false' ]; then
-        curl -s -Lo bot https://github.com/Andtherya/test/releases/download/tjt/cloudflared-arm64
+    if command -v curl &> /dev/null; then
+        curl -s -Lo web https://github.com/Andtherya/test/releases/download/xray/xray-arm
+        curl -s -Lo bot https://github.com/Andtherya/test/releases/download/test/argo-linux-arm64
+    elif command -v wget &> /dev/null; then
+        wget -q -O web https://github.com/Andtherya/test/releases/download/xray/xray-arm
+        wget -q -O bot https://github.com/Andtherya/test/releases/download/test/argo-linux-arm64
     fi
 elif [ "$ARCH" == "amd64" ] || [ "$ARCH" == "x86_64" ] || [ "$ARCH" == "x86" ]; then
-    curl -s -Lo web https://github.com/Andtherya/test/releases/download/sb/amd-sb
-    if [ "$DISABLE_ARGO" == 'false' ]; then
-        curl -s -Lo bot https://github.com/Andtherya/test/releases/download/tjt/cloudflared-amd64
+    if command -v curl &> /dev/null; then
+        curl -s -Lo web https://github.com/Andtherya/test/releases/download/xray/xray-amd
+        curl -s -Lo bot https://github.com/Andtherya/test/releases/download/test/argo-linux-amd64
+    elif command -v wget &> /dev/null; then
+        wget -q -O web https://github.com/Andtherya/test/releases/download/xray/xray-amd
+        wget -q -O bot https://github.com/Andtherya/test/releases/download/test/argo-linux-amd64
     fi
 else
-    sleep 0
-    #echo "Unsupported architecture: $ARCH"
+    echo "Unsupported architecture: $ARCH"
     exit 1
 fi
 
 wait
 
-chmod +x web
-if [ "$DISABLE_ARGO" == 'false' ]; then
-    chmod +x bot
+chmod +x bot web
+
+# 根据 WARP_ENABLED 生成不同的 outbounds 配置
+if [ "$WARP_ENABLED" == "true" ]; then
+    OUTBOUNDS_CONFIG='[
+    {
+      "protocol": "wireguard",
+      "settings": {
+        "secretKey": "'"$WARP_PRIVATE_KEY"'",
+        "address": [
+          "'"$WARP_ADDRESS_V4"'/32",
+          "'"$WARP_ADDRESS_V6"'/128"
+        ],
+        "peers": [
+          {
+            "publicKey": "'"$WARP_PUBLIC_KEY"'",
+            "allowedIPs": ["0.0.0.0/0", "::/0"],
+            "endpoint": "'"$WARP_ENDPOINT"'"
+          }
+        ],
+        "reserved": '"$WARP_RESERVED"',
+        "mtu": 1280
+      },
+      "tag": "warp"
+    },
+    {
+      "protocol": "freedom",
+      "tag": "direct"
+    },
+    {
+      "protocol": "blackhole",
+      "tag": "block"
+    }
+  ]'
+else
+    OUTBOUNDS_CONFIG='[
+    {
+      "protocol": "freedom",
+      "tag": "direct"
+    },
+    {
+      "protocol": "blackhole",
+      "tag": "block"
+    }
+  ]'
 fi
 
-  cat > config.json << EOF
+# 生成 Xray 配置文件 config.json
+cat > config.json <<EOF
 {
-    "log": {
-      "disabled": true,
-      "level": "error",
-      "timestamp": true
-    },
-    "inbounds": [
+  "log": {
+    "access": "/dev/null",
+    "error": "/dev/null",
+    "loglevel": "none"
+  },
+  "inbounds": [
     {
-      "tag": "vmess-ws-in",
-      "type": "vmess",
-      "listen": "::",
-      "listen_port": ${ARGO_PORT},
-        "users": [
-        {
-          "uuid": "${UUID}"
-        }
-      ],
-      "transport": {
-        "type": "ws",
-        "path": "/vmess-argo",
-        "early_data_header_name": "Sec-WebSocket-Protocol"
+      "port": $ARGO_PORT,
+      "protocol": "vless",
+      "settings": {
+        "clients": [
+          {
+            "id": "$UUID",
+            "flow": "xtls-rprx-vision"
+          }
+        ],
+        "decryption": "none",
+        "fallbacks": [
+          { "dest": $VLPORT },
+          { "path": "/vless-argo", "dest": $((VLPORT + 1)) },
+          { "path": "/vmess-argo", "dest": $((VLPORT + 2)) },
+          { "path": "/trojan-argo", "dest": $((VLPORT + 3)) }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp"
       }
-    }],
-  "endpoints": [
+    },
     {
-      "type": "wireguard",
-      "tag": "warp-out",
-      "mtu": 1280,
-      "address": [
-        "172.16.0.2/32",
-        "2606:4700:110:8dfe:d141:69bb:6b80:925/128"
-      ],
-      "private_key": "YFYOAdbw1bKTHlNNi+aEjBM3BO7unuFC5rOkMRAz9XY=",
-      "peers": [
-        {
-          "address": "engage.cloudflareclient.com",
-          "port": 2408,
-          "public_key": "bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo=",
-          "allowed_ips": [
-            "0.0.0.0/0",
-            "::/0"
-          ],
-          "reserved": [
-            78,
-            135,
-            76
-          ]
+      "port": $VLPORT,
+      "listen": "127.0.0.1",
+      "protocol": "vless",
+      "settings": {
+        "clients": [
+          { "id": "$UUID" }
+        ],
+        "decryption": "none"
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "none"
+      }
+    },
+    {
+      "port": $((VLPORT + 1)),
+      "listen": "127.0.0.1",
+      "protocol": "vless",
+      "settings": {
+        "clients": [
+          { "id": "$UUID", "level": 0 }
+        ],
+        "decryption": "none"
+      },
+      "streamSettings": {
+        "network": "ws",
+        "security": "none",
+        "wsSettings": {
+          "path": "/vless-argo"
         }
-      ]
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls", "quic"],
+        "metadataOnly": false
+      }
+    },
+    {
+      "port": $((VLPORT + 2)),
+      "listen": "127.0.0.1",
+      "protocol": "vmess",
+      "settings": {
+        "clients": [
+          { "id": "$UUID", "alterId": 0 }
+        ]
+      },
+      "streamSettings": {
+        "network": "ws",
+        "wsSettings": {
+          "path": "/vmess-argo"
+        }
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls", "quic"],
+        "metadataOnly": false
+      }
+    },
+    {
+      "port": $((VLPORT + 3)),
+      "listen": "127.0.0.1",
+      "protocol": "trojan",
+      "settings": {
+        "clients": [
+          { "password": "$UUID" }
+        ]
+      },
+      "streamSettings": {
+        "network": "ws",
+        "security": "none",
+        "wsSettings": {
+          "path": "/trojan-argo"
+        }
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls", "quic"],
+        "metadataOnly": false
+      }
     }
   ],
-  "outbounds": [
-    { "type": "direct", "tag": "direct" }
-  ],
-"route": {
-  "rules": [{"action": "sniff"}],
-  "final": "warp-out"
-}
+  "dns": {
+    "servers": [
+      "https+local://8.8.8.8/dns-query"
+    ]
+  },
+  "outbounds": $OUTBOUNDS_CONFIG
 }
 EOF
 sleep 1
 if [ -e "web" ]; then
     nohup ./web run -c config.json >/dev/null 2>&1 &
     sleep 2
-    echo -e "\e[1;32mweb is running\e[0m"
+    if [ "$WARP_ENABLED" == "true" ]; then
+        echo -e "\e[1;32mweb is running (with WARP outbound)\e[0m"
+    else
+        echo -e "\e[1;32mweb is running (direct outbound)\e[0m"
+    fi
 fi
 
-if [ "$DISABLE_ARGO" == 'false' ]; then
-  if [ -e "bot" ]; then
-      if [[ $ARGO_AUTH =~ ^[A-Z0-9a-z=]{120,250}$ ]]; then
-        args="tunnel --edge-ip-version auto --no-autoupdate --protocol http2 run --token ${ARGO_AUTH}"
-      elif [[ $ARGO_AUTH =~ TunnelSecret ]]; then
-        args="tunnel --edge-ip-version auto --config tunnel.yml run"
-      else
-        args="tunnel --edge-ip-version auto --no-autoupdate --protocol http2 --logfile boot.log --loglevel info --url http://localhost:$ARGO_PORT"
-      fi
-      nohup ./bot $args >/dev/null 2>&1 &
-      sleep 2
-      echo -e "\e[1;32mbot is running\e[0m" 
-  fi
+if [ -e "bot" ]; then
+    if [[ $ARGO_AUTH =~ ^[A-Z0-9a-z=]{120,250}$ ]]; then
+        args="tunnel --edge-proxy-url socks5://206.123.156.194:5004 --edge-ip-version auto --no-autoupdate --protocol http2 run --token ${ARGO_AUTH}"
+    elif [[ $ARGO_AUTH =~ TunnelSecret ]]; then
+        args="tunnel --edge-proxy-url socks5://206.123.156.194:5004 --edge-ip-version auto --config tunnel.yml run"
+    else
+        args="tunnel --edge-proxy-url socks5://206.123.156.194:5004 --edge-ip-version auto --no-autoupdate --protocol http2 --logfile boot.log --loglevel info --url http://localhost:$ARGO_PORT"
+    fi
+    
+    nohup ./bot $args >/dev/null 2>&1 &
+    sleep 2
+    echo -e "\e[1;32mbot is running\e[0m" 
 fi
-
-}
-download_and_run
 
 get_argodomain() {
-if [ "$DISABLE_ARGO" == 'false' ]; then
-  if [[ -n $ARGO_AUTH ]]; then
+if [[ -n $ARGO_AUTH ]]; then
     sleep 0
     echo "$ARGO_DOMAIN"
-  else
+else
     local retry=0
     local max_retries=8
     local argodomain=""
+    
     while [[ $retry -lt $max_retries ]]; do
-      ((retry++))
-      argodomain=$(sed -n 's|.*https://\([^/]*trycloudflare\.com\).*|\1|p' boot.log)
-      if [[ -n $argodomain ]]; then
-        break
-      fi
-      sleep 1
+        ((retry++))
+        argodomain=$(sed -n 's|.*https://\([^/]*trycloudflare\.com\).*|\1|p' boot.log)
+        if [[ -n $argodomain ]]; then
+            break
+        fi
+        
+        sleep 1
     done
+    
     sleep 0
     echo "$argodomain"
-  fi
 fi
 }
 argodomain=$(get_argodomain)
-sleep 1
-IP=$(curl -s --max-time 2 ipv4.ip.sb || curl -s --max-time 1 api.ipify.org || { ipv6=$(curl -s --max-time 1 ipv6.ip.sb); echo "[$ipv6]"; } || echo "XXX")
+
+# 获取 ISP 信息
 JSON="$(curl -s https://ipinfo.io/json)"
 COUNTRY="$(echo "$JSON" | sed -n 's/.*"country":[[:space:]]*"\([^"]*\)".*/\1/p')"
 ORG="$(echo "$JSON" | sed -n 's/.*"org":[[:space:]]*"AS[0-9]*[[:space:]]*\([^"]*\)".*/\1/p')"
 ISP="${COUNTRY}-${ORG}"
-costom_name() { if [ -n "$NAME" ]; then echo "${NAME}_${ISP}"; else echo "${ISP}"; fi; }
 
-VMESS="{ \"v\": \"2\", \"ps\": \"$(costom_name)\", \"add\": \"${CFIP}\", \"port\": \"${CFPORT}\", \"id\": \"${UUID}\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"${argodomain}\", \"path\": \"/vmess-argo?ed=2560\", \"tls\": \"tls\", \"sni\": \"${argodomain}\", \"alpn\": \"\", \"fp\": \"firefox\"}"
-
-cat > list.txt <<EOF
-vmess://$(echo "$VMESS" | base64 | tr -d '\n')
+# 构建 VMESS JSON 并转 base64
+VMESS_JSON=$(cat <<EOF
+{
+  "v": "2",
+  "ps": "${NAME}-${ISP}",
+  "add": "${CFIP}",
+  "port": "${CFPORT}",
+  "id": "${UUID}",
+  "aid": "0",
+  "scy": "auto",
+  "net": "ws",
+  "type": "none",
+  "host": "${argodomain}",
+  "path": "/vmess-argo?ed=2560",
+  "tls": "tls",
+  "sni": "${argodomain}",
+  "alpn": "",
+  "fp":"firefox"
+}
 EOF
+)
 
-base64 list.txt | tr -d '\n' > sub.txt
+VMESS_BASE64=$(echo -n "$VMESS_JSON" | base64 -w 0)
 
-cat sub.txt
+# 构建 vless / vmess / trojan 连接内容
+subTxt=$(cat <<EOF
+vless://${UUID}@${CFIP}:${CFPORT}?encryption=none&security=tls&sni=${argodomain}&fp=firefox&type=ws&host=${argodomain}&path=%2Fvless-argo%3Fed%3D2560#${NAME}-${ISP}
+
+vmess://${VMESS_BASE64}
+
+trojan://${UUID}@${CFIP}:${CFPORT}?security=tls&sni=${argodomain}&fp=firefox&type=ws&host=${argodomain}&path=%2Ftrojan-argo%3Fed%3D2560#${NAME}-${ISP}
+EOF
+)
+
+echo "$subTxt" | base64 -w 0 > "./sub.txt"
+echo "./sub.txt saved successfully"
+echo "$subTxt" | base64 -w 0
 echo -e "\n\n"
+
+rm -rf "$(pwd)"
