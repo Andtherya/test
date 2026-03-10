@@ -83,10 +83,33 @@ elif [ -n "$Xray_link" ]; then
     # 解析代理链接，生成 xray outbound 配置
     PROTO="$(echo "$Xray_link" | sed -n 's|^\([a-z]*\)://.*|\1|p')"
 
+    # 辅助函数：根据 security 生成 streamSettings JSON
+    # 参数: $1=network $2=security $3=sni $4=fp $5=path $6=host
+    build_stream_settings() {
+        local _net="${1:-ws}" _sec="${2}" _sni="${3}" _fp="${4:-firefox}" _path="${5}" _host="${6:-$3}"
+        if [ "$_sec" = "tls" ]; then
+            cat <<SEOF
+    "network": "${_net}",
+    "security": "tls",
+    "tlsSettings": {
+      "serverName": "${_sni}",
+      "fingerprint": "${_fp}",
+      "allowInsecure": false
+    },
+    "wsSettings": {"path": "${_path}", "headers": {"Host": "${_host}"}}
+SEOF
+        else
+            cat <<SEOF
+    "network": "${_net}",
+    "security": "none",
+    "wsSettings": {"path": "${_path}", "headers": {"Host": "${_host}"}}
+SEOF
+        fi
+    }
+
     generate_proxy_outbound() {
         case "$PROTO" in
         vless)
-            # vless://uuid@addr:port?params#name
             local userinfo="$(echo "$Xray_link" | sed 's|^vless://||' | sed 's|#.*||')"
             local uuid="$(echo "$userinfo" | sed 's|@.*||')"
             local hostport="$(echo "$userinfo" | sed 's|^[^@]*@||' | sed 's|?.*||')"
@@ -96,11 +119,13 @@ elif [ -n "$Xray_link" ]; then
 
             local sni="$(echo "$params" | tr '&' '\n' | sed -n 's|^sni=||p')"
             local host="$(echo "$params" | tr '&' '\n' | sed -n 's|^host=||p')"
-            local path="$(echo "$params" | tr '&' '\n' | sed -n 's|^path=||p' | sed 's|%2F|/|g; s|%3F|?|g; s|%3D|=|g')"
+            local path="$(echo "$params" | tr '&' '\n' | sed -n 's|^path=||p' | sed 's|%2F|/|g; s|%3F|?|g; s|%3D|=|g; s|%26|\&|g')"
             local fp="$(echo "$params" | tr '&' '\n' | sed -n 's|^fp=||p')"
             local net_type="$(echo "$params" | tr '&' '\n' | sed -n 's|^type=||p')"
             local security="$(echo "$params" | tr '&' '\n' | sed -n 's|^security=||p')"
             local encryption="$(echo "$params" | tr '&' '\n' | sed -n 's|^encryption=||p')"
+
+            local stream_body="$(build_stream_settings "${net_type}" "${security}" "${sni}" "${fp}" "${path}" "${host}")"
 
             cat <<XEOF
 {
@@ -109,24 +134,11 @@ elif [ -n "$Xray_link" ]; then
     "vnext": [{
       "address": "${addr}",
       "port": ${port},
-      "users": [{
-        "id": "${uuid}",
-        "encryption": "${encryption:-none}"
-      }]
+      "users": [{"id": "${uuid}", "encryption": "${encryption:-none}"}]
     }]
   },
   "streamSettings": {
-    "network": "${net_type:-ws}",
-    "security": "${security:-tls}",
-    "tlsSettings": {
-      "serverName": "${sni}",
-      "fingerprint": "${fp:-firefox}",
-      "allowInsecure": false
-    },
-    "wsSettings": {
-      "path": "${path}",
-      "headers": { "Host": "${host:-$sni}" }
-    }
+${stream_body}
   },
   "tag": "proxy-out"
 }
@@ -134,7 +146,6 @@ XEOF
             ;;
 
         vmess)
-            # vmess://base64json
             local b64="$(echo "$Xray_link" | sed 's|^vmess://||' | sed 's|#.*||')"
             local json="$(echo "$b64" | base64 -d 2>/dev/null)"
 
@@ -151,7 +162,9 @@ XEOF
             local scy="$(echo "$json" | sed -n 's|.*"scy"[[:space:]]*:[[:space:]]*"\([^"]*\)".*|\1|p')"
 
             local security="none"
-            [ "$tls" == "tls" ] && security="tls"
+            [ "$tls" = "tls" ] && security="tls"
+
+            local stream_body="$(build_stream_settings "${net}" "${security}" "${sni}" "${fp}" "${path}" "${host}")"
 
             cat <<XEOF
 {
@@ -160,25 +173,11 @@ XEOF
     "vnext": [{
       "address": "${addr}",
       "port": ${port},
-      "users": [{
-        "id": "${uuid}",
-        "alterId": ${aid:-0},
-        "security": "${scy:-auto}"
-      }]
+      "users": [{"id": "${uuid}", "alterId": ${aid:-0}, "security": "${scy:-auto}"}]
     }]
   },
   "streamSettings": {
-    "network": "${net:-ws}",
-    "security": "${security}",
-    "tlsSettings": {
-      "serverName": "${sni}",
-      "fingerprint": "${fp:-firefox}",
-      "allowInsecure": false
-    },
-    "wsSettings": {
-      "path": "${path}",
-      "headers": { "Host": "${host:-$sni}" }
-    }
+${stream_body}
   },
   "tag": "proxy-out"
 }
@@ -186,7 +185,6 @@ XEOF
             ;;
 
         trojan)
-            # trojan://password@addr:port?params#name
             local userinfo="$(echo "$Xray_link" | sed 's|^trojan://||' | sed 's|#.*||')"
             local password="$(echo "$userinfo" | sed 's|@.*||')"
             local hostport="$(echo "$userinfo" | sed 's|^[^@]*@||' | sed 's|?.*||')"
@@ -196,33 +194,21 @@ XEOF
 
             local sni="$(echo "$params" | tr '&' '\n' | sed -n 's|^sni=||p')"
             local host="$(echo "$params" | tr '&' '\n' | sed -n 's|^host=||p')"
-            local path="$(echo "$params" | tr '&' '\n' | sed -n 's|^path=||p' | sed 's|%2F|/|g; s|%3F|?|g; s|%3D|=|g')"
+            local path="$(echo "$params" | tr '&' '\n' | sed -n 's|^path=||p' | sed 's|%2F|/|g; s|%3F|?|g; s|%3D|=|g; s|%26|\&|g')"
             local fp="$(echo "$params" | tr '&' '\n' | sed -n 's|^fp=||p')"
             local net_type="$(echo "$params" | tr '&' '\n' | sed -n 's|^type=||p')"
             local security="$(echo "$params" | tr '&' '\n' | sed -n 's|^security=||p')"
+
+            local stream_body="$(build_stream_settings "${net_type}" "${security}" "${sni}" "${fp}" "${path}" "${host}")"
 
             cat <<XEOF
 {
   "protocol": "trojan",
   "settings": {
-    "servers": [{
-      "address": "${addr}",
-      "port": ${port},
-      "password": "${password}"
-    }]
+    "servers": [{"address": "${addr}", "port": ${port}, "password": "${password}"}]
   },
   "streamSettings": {
-    "network": "${net_type:-ws}",
-    "security": "${security:-tls}",
-    "tlsSettings": {
-      "serverName": "${sni}",
-      "fingerprint": "${fp:-firefox}",
-      "allowInsecure": false
-    },
-    "wsSettings": {
-      "path": "${path}",
-      "headers": { "Host": "${host:-$sni}" }
-    }
+${stream_body}
   },
   "tag": "proxy-out"
 }
