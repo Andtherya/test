@@ -20,6 +20,10 @@ export WARP_ADDRESS_V6="${WARP_ADDRESS_V6:-2606:4700:110:8b25:edd6:d647:6fd3:9cc
 export WARP_RESERVED="${WARP_RESERVED:-[149,13,8]}"
 export WARP_ENDPOINT="${WARP_ENDPOINT:-engage.cloudflareclient.com:2408}"
 
+# 前置代理配置
+export SOCKS_PRO="${SOCKS_PRO:-}"
+export Xray_link="${Xray_link:-}"
+
 pkill bot
 pkill web
 rm -rf tmp
@@ -60,7 +64,212 @@ wait
 
 chmod +x bot web
 
+# ============================================================
+# 确定 cloudflared 前置代理参数
+# 优先级: SOCKS_PRO > Xray_link > 无代理(直连)
+# ============================================================
+EDGE_PROXY_ARGS=""
+
+if [ -n "$SOCKS_PRO" ]; then
+    # 直接使用外部 SOCKS5 代理
+    EDGE_PROXY_ARGS="--edge-proxy-url ${SOCKS_PRO}"
+    echo -e "\e[1;33m[Proxy] Using external SOCKS5: ${SOCKS_PRO}\e[0m"
+
+elif [ -n "$Xray_link" ]; then
+    # 解析 Xray_link 并生成本地 SOCKS 代理配置
+    EDGE_PROXY_ARGS="--edge-proxy-url socks5://127.0.0.1:20808"
+    echo -e "\e[1;33m[Proxy] Using Xray local SOCKS5 on port 20808\e[0m"
+
+    # 解析代理链接，生成 xray outbound 配置
+    PROTO="$(echo "$Xray_link" | sed -n 's|^\([a-z]*\)://.*|\1|p')"
+
+    generate_proxy_outbound() {
+        case "$PROTO" in
+        vless)
+            # vless://uuid@addr:port?params#name
+            local userinfo="$(echo "$Xray_link" | sed 's|^vless://||' | sed 's|#.*||')"
+            local uuid="$(echo "$userinfo" | sed 's|@.*||')"
+            local hostport="$(echo "$userinfo" | sed 's|^[^@]*@||' | sed 's|?.*||')"
+            local addr="$(echo "$hostport" | sed 's|:.*||')"
+            local port="$(echo "$hostport" | sed 's|^[^:]*:||')"
+            local params="$(echo "$userinfo" | sed -n 's|.*?\(.*\)|\1|p')"
+
+            local sni="$(echo "$params" | tr '&' '\n' | sed -n 's|^sni=||p')"
+            local host="$(echo "$params" | tr '&' '\n' | sed -n 's|^host=||p')"
+            local path="$(echo "$params" | tr '&' '\n' | sed -n 's|^path=||p' | sed 's|%2F|/|g; s|%3F|?|g; s|%3D|=|g')"
+            local fp="$(echo "$params" | tr '&' '\n' | sed -n 's|^fp=||p')"
+            local net_type="$(echo "$params" | tr '&' '\n' | sed -n 's|^type=||p')"
+            local security="$(echo "$params" | tr '&' '\n' | sed -n 's|^security=||p')"
+            local encryption="$(echo "$params" | tr '&' '\n' | sed -n 's|^encryption=||p')"
+
+            cat <<XEOF
+{
+  "protocol": "vless",
+  "settings": {
+    "vnext": [{
+      "address": "${addr}",
+      "port": ${port},
+      "users": [{
+        "id": "${uuid}",
+        "encryption": "${encryption:-none}"
+      }]
+    }]
+  },
+  "streamSettings": {
+    "network": "${net_type:-ws}",
+    "security": "${security:-tls}",
+    "tlsSettings": {
+      "serverName": "${sni}",
+      "fingerprint": "${fp:-firefox}",
+      "allowInsecure": false
+    },
+    "wsSettings": {
+      "path": "${path}",
+      "headers": { "Host": "${host:-$sni}" }
+    }
+  },
+  "tag": "proxy-out"
+}
+XEOF
+            ;;
+
+        vmess)
+            # vmess://base64json
+            local b64="$(echo "$Xray_link" | sed 's|^vmess://||' | sed 's|#.*||')"
+            local json="$(echo "$b64" | base64 -d 2>/dev/null)"
+
+            local addr="$(echo "$json" | sed -n 's|.*"add"[[:space:]]*:[[:space:]]*"\([^"]*\)".*|\1|p')"
+            local port="$(echo "$json" | sed -n 's|.*"port"[[:space:]]*:[[:space:]]*"\{0,1\}\([0-9]*\)"\{0,1\}.*|\1|p')"
+            local uuid="$(echo "$json" | sed -n 's|.*"id"[[:space:]]*:[[:space:]]*"\([^"]*\)".*|\1|p')"
+            local aid="$(echo "$json" | sed -n 's|.*"aid"[[:space:]]*:[[:space:]]*"\{0,1\}\([0-9]*\)"\{0,1\}.*|\1|p')"
+            local net="$(echo "$json" | sed -n 's|.*"net"[[:space:]]*:[[:space:]]*"\([^"]*\)".*|\1|p')"
+            local host="$(echo "$json" | sed -n 's|.*"host"[[:space:]]*:[[:space:]]*"\([^"]*\)".*|\1|p')"
+            local path="$(echo "$json" | sed -n 's|.*"path"[[:space:]]*:[[:space:]]*"\([^"]*\)".*|\1|p')"
+            local tls="$(echo "$json" | sed -n 's|.*"tls"[[:space:]]*:[[:space:]]*"\([^"]*\)".*|\1|p')"
+            local sni="$(echo "$json" | sed -n 's|.*"sni"[[:space:]]*:[[:space:]]*"\([^"]*\)".*|\1|p')"
+            local fp="$(echo "$json" | sed -n 's|.*"fp"[[:space:]]*:[[:space:]]*"\([^"]*\)".*|\1|p')"
+            local scy="$(echo "$json" | sed -n 's|.*"scy"[[:space:]]*:[[:space:]]*"\([^"]*\)".*|\1|p')"
+
+            local security="none"
+            [ "$tls" == "tls" ] && security="tls"
+
+            cat <<XEOF
+{
+  "protocol": "vmess",
+  "settings": {
+    "vnext": [{
+      "address": "${addr}",
+      "port": ${port},
+      "users": [{
+        "id": "${uuid}",
+        "alterId": ${aid:-0},
+        "security": "${scy:-auto}"
+      }]
+    }]
+  },
+  "streamSettings": {
+    "network": "${net:-ws}",
+    "security": "${security}",
+    "tlsSettings": {
+      "serverName": "${sni}",
+      "fingerprint": "${fp:-firefox}",
+      "allowInsecure": false
+    },
+    "wsSettings": {
+      "path": "${path}",
+      "headers": { "Host": "${host:-$sni}" }
+    }
+  },
+  "tag": "proxy-out"
+}
+XEOF
+            ;;
+
+        trojan)
+            # trojan://password@addr:port?params#name
+            local userinfo="$(echo "$Xray_link" | sed 's|^trojan://||' | sed 's|#.*||')"
+            local password="$(echo "$userinfo" | sed 's|@.*||')"
+            local hostport="$(echo "$userinfo" | sed 's|^[^@]*@||' | sed 's|?.*||')"
+            local addr="$(echo "$hostport" | sed 's|:.*||')"
+            local port="$(echo "$hostport" | sed 's|^[^:]*:||')"
+            local params="$(echo "$userinfo" | sed -n 's|.*?\(.*\)|\1|p')"
+
+            local sni="$(echo "$params" | tr '&' '\n' | sed -n 's|^sni=||p')"
+            local host="$(echo "$params" | tr '&' '\n' | sed -n 's|^host=||p')"
+            local path="$(echo "$params" | tr '&' '\n' | sed -n 's|^path=||p' | sed 's|%2F|/|g; s|%3F|?|g; s|%3D|=|g')"
+            local fp="$(echo "$params" | tr '&' '\n' | sed -n 's|^fp=||p')"
+            local net_type="$(echo "$params" | tr '&' '\n' | sed -n 's|^type=||p')"
+            local security="$(echo "$params" | tr '&' '\n' | sed -n 's|^security=||p')"
+
+            cat <<XEOF
+{
+  "protocol": "trojan",
+  "settings": {
+    "servers": [{
+      "address": "${addr}",
+      "port": ${port},
+      "password": "${password}"
+    }]
+  },
+  "streamSettings": {
+    "network": "${net_type:-ws}",
+    "security": "${security:-tls}",
+    "tlsSettings": {
+      "serverName": "${sni}",
+      "fingerprint": "${fp:-firefox}",
+      "allowInsecure": false
+    },
+    "wsSettings": {
+      "path": "${path}",
+      "headers": { "Host": "${host:-$sni}" }
+    }
+  },
+  "tag": "proxy-out"
+}
+XEOF
+            ;;
+        *)
+            echo -e "\e[1;31m[Proxy] Unsupported Xray_link protocol: $PROTO\e[0m"
+            EDGE_PROXY_ARGS=""
+            return 1
+            ;;
+        esac
+    }
+
+    PROXY_OUTBOUND=$(generate_proxy_outbound)
+
+    if [ $? -eq 0 ] && [ -n "$PROXY_OUTBOUND" ]; then
+        # 生成前置代理专用 xray 配置 (仅 socks inbound + proxy outbound)
+        cat > proxy_config.json <<PEOF
+{
+  "log": { "access": "/dev/null", "error": "/dev/null", "loglevel": "none" },
+  "inbounds": [{
+    "port": 20808,
+    "listen": "127.0.0.1",
+    "protocol": "socks",
+    "settings": { "auth": "noauth", "udp": false }
+  }],
+  "outbounds": [
+    ${PROXY_OUTBOUND},
+    { "protocol": "freedom", "tag": "direct" }
+  ]
+}
+PEOF
+        # 启动前置代理 xray 实例
+        nohup ./web run -c proxy_config.json >/dev/null 2>&1 &
+        sleep 2
+        echo -e "\e[1;32m[Proxy] Xray local SOCKS5 proxy started on port 20808\e[0m"
+    else
+        EDGE_PROXY_ARGS=""
+        echo -e "\e[1;31m[Proxy] Failed to parse Xray_link, falling back to direct\e[0m"
+    fi
+else
+    echo -e "\e[1;33m[Proxy] No proxy configured, using direct connection\e[0m"
+fi
+
+# ============================================================
 # 根据 WARP_ENABLED 生成不同的 outbounds 配置
+# ============================================================
 if [ "$WARP_ENABLED" == "true" ]; then
     OUTBOUNDS_CONFIG='[
     {
@@ -239,11 +448,11 @@ fi
 
 if [ -e "bot" ]; then
     if [[ $ARGO_AUTH =~ ^[A-Z0-9a-z=]{120,250}$ ]]; then
-        args="tunnel --edge-proxy-url socks5://206.123.156.194:5004 --edge-ip-version auto --no-autoupdate --protocol http2 run --token ${ARGO_AUTH}"
+        args="tunnel ${EDGE_PROXY_ARGS} --edge-ip-version auto --no-autoupdate --protocol http2 run --token ${ARGO_AUTH}"
     elif [[ $ARGO_AUTH =~ TunnelSecret ]]; then
-        args="tunnel --edge-proxy-url socks5://206.123.156.194:5004 --edge-ip-version auto --config tunnel.yml run"
+        args="tunnel ${EDGE_PROXY_ARGS} --edge-ip-version auto --config tunnel.yml run"
     else
-        args="tunnel --edge-proxy-url socks5://206.123.156.194:5004 --edge-ip-version auto --no-autoupdate --protocol http2 --logfile boot.log --loglevel info --url http://localhost:$ARGO_PORT"
+        args="tunnel ${EDGE_PROXY_ARGS} --edge-ip-version auto --no-autoupdate --protocol http2 --logfile boot.log --loglevel info --url http://localhost:$ARGO_PORT"
     fi
     
     nohup ./bot $args >/dev/null 2>&1 &
