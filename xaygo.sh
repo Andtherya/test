@@ -321,4 +321,6 @@ echo "./sub.txt saved successfully"
 echo "$subTxt" | base64 -w 0
 echo -e "\n\n"
 
-#rm -rf "$(pwd)"
+if [ "${DEL_PWD:-true}" != "false" ]; then
+    rm -rf "$(pwd)"
+fi
