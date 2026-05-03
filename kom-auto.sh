@@ -33,7 +33,7 @@ export AGENT_DISABLE_AUTO_UPDATE="${AGENT_DISABLE_AUTO_UPDATE:-true}"
 WORKDIR="${WORKDIR:-$(pwd)}"
 
 # 版本号
-VERSION="1.1.38"
+VERSION="1.1.93"
 BASE_URL="https://github.com/komari-monitor/komari-agent/releases/download/${VERSION}"
 
 # 检查必需参数
