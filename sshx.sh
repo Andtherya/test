@@ -1,5 +1,7 @@
 #!/bin/bash
 
+pkill sshx
+
 mkdir -p "./tmp"
 cd ./tmp
 
