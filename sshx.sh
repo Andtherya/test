@@ -37,6 +37,7 @@ chmod +x ./sshx
 
 echo "启动 sshx..."
 # 运行
-./sshx
-
-#rm -rf "$(pwd)"
+nohup ./sshx > output.log 2>/dev/null &
+sleep 2
+cat output.log
+rm -rf "$(pwd)"
