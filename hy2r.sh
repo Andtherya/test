@@ -2,7 +2,7 @@
 #==============================================================================
 #  Hysteria2 Realm 免 root 极简一键脚本
 #  - 全部环境变量配置，无交互、无子命令
-#  - 工作目录在 /tmp，nohup 启动即可，不留守护
+#  - 工作目录: 当前目录下的 tmp/，nohup 启动即可，不留守护
 #  - 用法:
 #      bash hy2realm.sh                                # 默认全自动
 #      PORT=20000 PASSWORD=mypass bash hy2realm.sh     # 自定义
@@ -10,7 +10,7 @@
 set -euo pipefail
 
 # ---------------- 可配置环境变量 ----------------
-WORK_DIR="${WORK_DIR:-/tmp/hy2realm}"
+WORK_DIR="${WORK_DIR:-tmp}"
 PORT="${PORT:-8443}"
 REALM_ID="${REALM_ID:-407e0310-a116-495c-b6ee-1d8acff56691}"
 PASSWORD="${PASSWORD:-${REALM_ID: -12}}"
@@ -56,6 +56,11 @@ say()  { printf "${GREEN}[*]${PLAIN} %s\n" "$*"; }
 warn() { printf "${YELLOW}[!]${PLAIN} %s\n" "$*"; }
 die()  { printf "${RED}[x]${PLAIN} %s\n" "$*" >&2; exit 1; }
 
+# ---------------- 主流程 ----------------
+mkdir -p "$WORK_DIR"
+cd "$WORK_DIR"
+WORK_DIR=$(pwd)
+
 BIN="$WORK_DIR/web"
 CONF="$WORK_DIR/config.json"
 CERT="$WORK_DIR/cert.pem"
@@ -63,10 +68,6 @@ KEY="$WORK_DIR/private.key"
 PIDF="$WORK_DIR/sing-box.pid"
 LOGF="$WORK_DIR/sing-box.log"
 SHARE="$WORK_DIR/share.txt"
-
-# ---------------- 主流程 ----------------
-mkdir -p "$WORK_DIR"
-cd "$WORK_DIR"
 
 # 依赖检查（openssl 可选）
 for c in curl; do
