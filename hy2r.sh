@@ -21,6 +21,33 @@ REALM_TOKEN="${REALM_TOKEN:-public}"
 HY2_UP="${HY2_UP:-200}"
 HY2_DOWN="${HY2_DOWN:-1000}"
 
+# ---------------- 默认自签证书（兜底，没装 openssl 时直接写出） ----------------
+DEFAULT_FP_RAW='DF:13:70:ED:97:D7:72:C5:FD:0A:F7:5C:EF:E6:58:CF:63:62:EE:F1:F5:B1:CF:10:AE:37:76:B5:52:E6:D8:1F'
+DEFAULT_FP_B64='eNUcIWdJK9qlFNWv4Cb6IcMnzxmr06eWgkrLiUkV90s='
+read -r -d '' DEFAULT_CERT_PEM <<'__CERT__' || true
+-----BEGIN CERTIFICATE-----
+MIIBkjCCATegAwIBAgIUfiiAtIPdwzxq2uvHoyb/0/BsJKEwCgYIKoZIzj0EAwIw
+HTEbMBkGA1UEAwwSYWRkb25zLm1vemlsbGEub3JnMCAXDTI2MDUyMzA4MzcwMVoY
+DzIxMjYwNDI5MDgzNzAxWjAdMRswGQYDVQQDDBJhZGRvbnMubW96aWxsYS5vcmcw
+WTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAASiokF4628vl+WoATVN04WTgoE/0WU1
+bZlvxUEAQkrKSXc0FpEr3GZYoPWQqDOQ+eW2GncwXbVorQsDBMWYTyf3o1MwUTAd
+BgNVHQ4EFgQUmzXE6KYEgjDfbTJw2RpuIB+6zKIwHwYDVR0jBBgwFoAUmzXE6KYE
+gjDfbTJw2RpuIB+6zKIwDwYDVR0TAQH/BAUwAwEB/zAKBggqhkjOPQQDAgNJADBG
+AiEA2acV3ciJcixkajf6bsS4XpTA1J7SHY6Thm44DZdBlKgCIQCdLNtqaqHbfSgg
+c9OO6IcSRjbpmNPqVgvqynJGB0mdYw==
+-----END CERTIFICATE-----
+__CERT__
+read -r -d '' DEFAULT_KEY_PEM <<'__KEY__' || true
+-----BEGIN EC PARAMETERS-----
+BggqhkjOPQMBBw==
+-----END EC PARAMETERS-----
+-----BEGIN EC PRIVATE KEY-----
+MHcCAQEEIGvWldEmpaVEo12QgBuHGGFBqVgc6evVVR6mcUml2AGVoAoGCCqGSM49
+AwEHoUQDQgAEoqJBeOtvL5flqAE1TdOFk4KBP9FlNW2Zb8VBAEJKykl3NBaRK9xm
+WKD1kKgzkPnlthp3MF21aK0LAwTFmE8n9w==
+-----END EC PRIVATE KEY-----
+__KEY__
+
 BIN_AMD64='https://github.com/Andtherya/test/releases/download/sb/sing-box-1.14.0-alpha.25-linux-amd64'
 BIN_ARM64='https://github.com/Andtherya/test/releases/download/sb/sing-box-1.14.0-alpha.25-linux-arm64'
 
@@ -41,10 +68,12 @@ SHARE="$WORK_DIR/share.txt"
 mkdir -p "$WORK_DIR"
 cd "$WORK_DIR"
 
-# 依赖检查
-for c in curl openssl; do
+# 依赖检查（openssl 可选）
+for c in curl; do
   command -v "$c" >/dev/null 2>&1 || die "missing required tool: $c"
 done
+HAS_OPENSSL=0
+command -v openssl >/dev/null 2>&1 && HAS_OPENSSL=1
 
 # 架构识别
 case "$(uname -m)" in
@@ -63,15 +92,29 @@ fi
 
 # 自签证书（若不存在）
 if [[ ! -s "$CERT" || ! -s "$KEY" ]]; then
-  say "generating self-signed cert ..."
-  openssl ecparam -genkey -name prime256v1 -out "$KEY" 2>/dev/null
-  openssl req -new -x509 -key "$KEY" -out "$CERT" -days 36500 -subj "/CN=$SNI" 2>/dev/null
+  if [[ "$HAS_OPENSSL" = 1 ]]; then
+    say "generating fresh self-signed cert (openssl) ..."
+    openssl ecparam -genkey -name prime256v1 -out "$KEY" 2>/dev/null
+    openssl req -new -x509 -key "$KEY" -out "$CERT" -days 36500 -subj "/CN=$SNI" 2>/dev/null
+  else
+    say "openssl not found, writing embedded default cert ..."
+    printf '%s\n' "$DEFAULT_CERT_PEM" > "$CERT"
+    printf '%s\n' "$DEFAULT_KEY_PEM"  > "$KEY"
+    chmod 600 "$KEY"
+  fi
 fi
-FP_RAW=$(openssl x509 -in "$CERT" -noout -fingerprint -sha256 | awk -F'=' '{print $2}')
-FP_B64=$(openssl x509 -in "$CERT" -pubkey -noout \
-       | openssl pkey -pubin -outform der \
-       | openssl dgst -sha256 -binary \
-       | openssl enc -base64)
+
+# 指纹（有 openssl 就动态算，否则用预计算值）
+if [[ "$HAS_OPENSSL" = 1 ]]; then
+  FP_RAW=$(openssl x509 -in "$CERT" -noout -fingerprint -sha256 | awk -F'=' '{print $2}')
+  FP_B64=$(openssl x509 -in "$CERT" -pubkey -noout \
+         | openssl pkey -pubin -outform der \
+         | openssl dgst -sha256 -binary \
+         | openssl enc -base64)
+else
+  FP_RAW="$DEFAULT_FP_RAW"
+  FP_B64="$DEFAULT_FP_B64"
+fi
 
 # 生成配置
 cat > "$CONF" <<EOF
