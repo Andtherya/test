@@ -194,9 +194,17 @@ cat > "$SHARE" <<EOF
   }
 }
 
----- sing-box client 完整可粘贴 config.json ----
+---- client.json (复制全部, 直接可用) ----
 {
   "log": { "level": "info", "timestamp": true },
+  "inbounds": [
+    {
+      "type": "mixed",
+      "tag": "in",
+      "listen": "127.0.0.1",
+      "listen_port": 7890
+    }
+  ],
   "outbounds": [
     {
       "type": "hysteria2",
