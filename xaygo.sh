@@ -279,7 +279,8 @@ argodomain=$(get_argodomain)
 # 获取 ISP 信息
 JSON="$(curl -s https://ipinfo.io/json)"
 COUNTRY="$(echo "$JSON" | sed -n 's/.*"country":[[:space:]]*"\([^"]*\)".*/\1/p')"
-ORG="$(echo "$JSON" | sed -n 's/.*"org":[[:space:]]*"AS[0-9]*[[:space:]]*\([^"]*\)".*/\1/p')"
+CLEAN=$(echo "$JSON" | tr -d '[:punct:]')
+ORG="$(echo "$CLEAN" | sed -n 's/.*"org":[[:space:]]*"AS[0-9]*[[:space:]]*\([^"]*\)".*/\1/p')"
 ISP="${COUNTRY}-${ORG}"
 
 # 构建 VMESS JSON 并转 base64
