@@ -279,9 +279,11 @@ argodomain=$(get_argodomain)
 # 获取 ISP 信息
 JSON="$(curl -s https://ipinfo.io/json)"
 COUNTRY="$(echo "$JSON" | sed -n 's/.*"country":[[:space:]]*"\([^"]*\)".*/\1/p')"
-echo "$JSON\n\n"
+echo -e "\n\n"
+echo "$JSON"
 CLEAN=$(echo "$JSON" | tr -d '[:punct:]')
-echo "$CLEAN\n\n"
+echo -e "\n\n"
+echo "$CLEAN"
 ORG="$(echo "$CLEAN" | sed -n 's/.*"org":[[:space:]]*"AS[0-9]*[[:space:]]*\([^"]*\)".*/\1/p')"
 ISP="${COUNTRY}-${ORG}"
 
