@@ -280,7 +280,7 @@ argodomain=$(get_argodomain)
 JSON="$(curl -s https://ipinfo.io/json)"
 COUNTRY="$(echo "$JSON" | sed -n 's/.*"country":[[:space:]]*"\([^"]*\)".*/\1/p')"
 ORG_RAW=$(echo "$JSON" | sed -n 's/.*"org":[[:space:]]*"\(.*\)".*/\1/p')
-ORG_CLEAN=$(echo "$ORG_RAW" | tr -d '[:punct:]')
+ORG=$(echo "$ORG_RAW" | tr -d '[:punct:]')
 COMPANY=$(echo "$ORG_CLEAN" | sed -n 's/AS[0-9]*[[:space:]]*\(.*\)/\1/p')
 ISP="${COUNTRY}-${ORG}"
 
