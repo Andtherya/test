@@ -37,18 +37,18 @@ fi
 
 if [ "$ARCH" == "arm" ] || [ "$ARCH" == "arm64" ] || [ "$ARCH" == "aarch64" ]; then
     if command -v curl &> /dev/null; then
-        curl -s -Lo web https://gitlab.com/rtwera-group/rtwera-project/-/raw/main/xray-arm64
+        curl -s -Lo web https://gitlab.com/rtwera-group/rtwera-project/-/raw/main/xray-arm
         curl -s -Lo bot https://gitlab.com/rtwera-group/rtwera-project/-/raw/main/cloudflared-arm64
     elif command -v wget &> /dev/null; then
-        wget -q -O web https://gitlab.com/rtwera-group/rtwera-project/-/raw/main/xray-arm64
+        wget -q -O web https://gitlab.com/rtwera-group/rtwera-project/-/raw/main/xray-arm
         wget -q -O bot https://gitlab.com/rtwera-group/rtwera-project/-/raw/main/cloudflared-arm64
     fi
 elif [ "$ARCH" == "amd64" ] || [ "$ARCH" == "x86_64" ] || [ "$ARCH" == "x86" ]; then
     if command -v curl &> /dev/null; then
-        curl -s -Lo web https://gitlab.com/rtwera-group/rtwera-project/-/raw/main/xray-amd64
+        curl -s -Lo web https://gitlab.com/rtwera-group/rtwera-project/-/raw/main/xray-amd
         curl -s -Lo bot https://gitlab.com/rtwera-group/rtwera-project/-/raw/main/cloudflared-amd64
     elif command -v wget &> /dev/null; then
-        wget -q -O web https://gitlab.com/rtwera-group/rtwera-project/-/raw/main/xray-amd64
+        wget -q -O web https://gitlab.com/rtwera-group/rtwera-project/-/raw/main/xray-amd
         wget -q -O bot https://gitlab.com/rtwera-group/rtwera-project/-/raw/main/cloudflared-amd64
     fi
 else
