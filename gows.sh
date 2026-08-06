@@ -2,6 +2,8 @@
 
 set -e
 
+pkill web
+
 ARCH="$(uname -m)"
 
 case "$ARCH" in
