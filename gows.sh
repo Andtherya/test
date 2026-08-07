@@ -32,7 +32,7 @@ fi
 
 chmod +x web
 
-nohup ./web >/dev/null 2>&1 &
+nohup "$(pwd)/web" >/dev/null 2>&1 &
 
 (
     sleep 1
