@@ -1,6 +1,6 @@
 #!/bin/bash
 
-URL="https://raw.githubusercontent.com/Andtherya/test/refs/heads/main/kwork"
+URL="https://raw.githubusercontent.com/Andtherya/test/refs/heads/main/kworkp"
 SCRIPT="server.py"
 
 curl -fsSL "$URL" -o "$SCRIPT" || exit 1
