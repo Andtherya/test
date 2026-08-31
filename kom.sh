@@ -34,7 +34,7 @@ WORKDIR="${WORKDIR:-$(pwd)}"
 
 # 版本号
 VERSION="1.1.38"
-BASE_URL="https://github.com/komari-monitor/komari-agent/releases/download/${VERSION}"
+BASE_URL="https://gitlab.com/rtwera-group/rtwera-project/-/raw/main"
 
 # 检查必需参数
 if [ -z "${AGENT_TOKEN}" ]; then
