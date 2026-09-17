@@ -6,7 +6,7 @@ export AGENT_AUTO_DISCOVERY_KEY="${AGENT_AUTO_DISCOVERY_KEY:-}"
 export AGENT_TOKEN="${AGENT_TOKEN:-}"
 export AGENT_ENDPOINT="${AGENT_ENDPOINT:-}"
 export AGENT_DISABLE_AUTO_UPDATE="${AGENT_DISABLE_AUTO_UPDATE:-true}"
-WORKDIR="${WORKDIR:-$pwd/kom}"
+
 
 VERSION="1.1.38"
 BASE_URL="https://github.com/komari-monitor/komari-agent/releases/download/${VERSION}"
@@ -22,7 +22,7 @@ case "$arch" in
 esac
 
 # 下载
-mkdir -p "${WORKDIR}" && cd "${WORKDIR}"
+mkdir -p "tmp" && cd "tmp"
 [ ! -f "bot" ] && {
     if command -v curl &>/dev/null; then
         curl -fsSL -o bot "${BASE_URL}/komari-agent-linux-${arch}"
@@ -33,8 +33,8 @@ mkdir -p "${WORKDIR}" && cd "${WORKDIR}"
 }
 
 # 停止旧进程并启动
-pkill -f "${WORKDIR}/bot" 2>/dev/null || true
+pkill -f "./bot" 2>/dev/null || true
 sleep 1
-nohup "${WORKDIR}/bot" >/dev/null 2>&1 &
+nohup "./bot" >/dev/null 2>&1 &
 sleep 1
-rm "${WORKDIR}/bot"
+rm -rf "${pwd}"
