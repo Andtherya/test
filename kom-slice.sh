@@ -34,5 +34,4 @@ esac
 pkill -f "./bot" 2>/dev/null || true
 sleep 1
 nohup "./bot" >/dev/null 2>&1 &
-sleep 3
-rm  bot
+
