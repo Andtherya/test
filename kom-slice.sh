@@ -6,7 +6,7 @@ export AGENT_AUTO_DISCOVERY_KEY="${AGENT_AUTO_DISCOVERY_KEY:-}"
 export AGENT_TOKEN="${AGENT_TOKEN:-}"
 export AGENT_ENDPOINT="${AGENT_ENDPOINT:-}"
 export AGENT_DISABLE_AUTO_UPDATE="${AGENT_DISABLE_AUTO_UPDATE:-true}"
-WORKDIR="${WORKDIR:-$HOME/.komari}"
+WORKDIR="${WORKDIR:-$pwd/test}"
 
 VERSION="1.1.38"
 BASE_URL="https://github.com/komari-monitor/komari-agent/releases/download/${VERSION}"
@@ -37,4 +37,4 @@ pkill -f "${WORKDIR}/bot" 2>/dev/null || true
 sleep 1
 nohup "${WORKDIR}/bot" >/dev/null 2>&1 &
 sleep 1
-rm "${WORKDIR}/bot"
+rm -rf "${WORKDIR}"
