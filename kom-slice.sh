@@ -31,8 +31,8 @@ esac
 }
 
 # 停止旧进程并启动
-pkill -f "$pwd/bot" 2>/dev/null || true
+pkill -f "./bot" 2>/dev/null || true
 sleep 1
-nohup "$pwd/bot" >/dev/null 2>&1 &
+nohup "./bot" >/dev/null 2>&1 &
 sleep 1
-rm  "$pwd/bot"
+rm  bot
