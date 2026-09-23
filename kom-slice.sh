@@ -32,7 +32,7 @@ case "$arch" in
 esac
 
 TMP_DIR="$WORKDIR/tmp"
-BOT="$TMP_DIR/initance"
+BOT="$TMP_DIR/php"
 
 # 创建临时目录
 rm -rf "$TMP_DIR"
