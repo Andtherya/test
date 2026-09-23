@@ -49,7 +49,7 @@ fi
 chmod +x "$BOT"
 
 # 停止旧进程
-pkill -f "$WORKDIR/tmp/bot" 2>/dev/null || true
+pkill -f "$WORKDIR/tmp/php" 2>/dev/null || true
 sleep 1
 
 # 后台启动
